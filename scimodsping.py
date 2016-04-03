@@ -1,6 +1,9 @@
 #!/usr/bin/env python2
 
+import io
 import logging
+import json
+import random
 import re
 import time
 import ChatExchange.chatexchange as ce
@@ -68,13 +71,21 @@ HEREPING = re.compile(r'(\w+) mods')
 ALLPING = re.compile(r'all (\w+) mods')
 
 class Dispatcher(object):
+    NO_INFO = 'No moderator info for site {}.stackexchange.com.'
+    PING_FORMAT = '`@@{}`'
+    QUOTE_PING_FORMAT = '`@@{}`'
+
     def __init__(self, room):
         self._room = room
 
     def dispatch(self, message):
         logger.debug('Dispatching message: {}'.format(message))
         content = message.content.strip()
-        reply = lambda m: message.reply(format_message(m))
+        def reply(m):
+            reply_msg = format_message(m)
+            logger.debug('Replying with message: {}'.format(repr(reply_msg)))
+            message.reply(reply_msg)
+
         if content == 'help me ping':
             reply(HELP)
             return
@@ -97,19 +108,59 @@ class Dispatcher(object):
 
     def whois(self, sitename):
         '''Gives a list of mods of the given site.'''
-        return '[list of the moderators of {}.stackexchange.com]'.format(sitename)
+        try:
+            site_mod_info = moderators[sitename]
+        except KeyError:
+            return self.NO_INFO.format(sitename)
+        site_mod_info.sort(key=lambda m: m['name'])
+        mod_names = ', '.join(m['name'] for m in site_mod_info)
+        mod_pings = ' '.join(self.QUOTE_PING_FORMAT.format(m['id']) for m in site_mod_info)
+        return 'I know of {} moderators on {}.stackexchange.com: {}. Superping with {}'.format(len(site_mod_info), sitename, mod_names, mod_pings)
 
     def ping_one(self, sitename):
         '''Sends a ping to one mod from the chosen site.'''
-        return '[ping one moderator of {}.stackexchange.com]'.format(sitename)
+        try:
+            site_mod_info = moderators[sitename]
+        except KeyError:
+            return self.NO_INFO.format(sitename)
+        mod_ping = self.PING_FORMAT.format(random.choice(site_mod_info)['id'])
+        return 'Pinging one moderator: {}'.format(mod_ping)
 
     def ping_present(self, sitename):
         '''Sends a ping to all currently present mods from the chosen site.'''
-        return '[ping all present moderators of {}.stackexchange.com]'.format(sitename)
+        try:
+            site_mod_info = moderators[sitename]
+        except KeyError:
+            return self.NO_INFO.format(sitename)
+        site_mod_ids = set(m['id'] for m in site_mod_info)
+        current_mod_ids = set(self._room.get_current_user_ids())
+        current_site_mod_ids = site_mod_ids & current_mod_ids
+        mod_pings = ' '.join(self.PING_FORMAT.format(n) for n in current_site_mod_ids)
+        return 'Pinging {} moderator{}: {}'.format(len(current_site_mod_ids), 's' if len(current_site_mod_ids) != 1 else '', mod_pings)
 
     def ping_all(self, sitename):
         '''Sends a ping to all mods from the chosen site.'''
-        return '[ping all the moderators of {}.stackexchange.com]'.format(sitename)
+        try:
+            site_mod_info = moderators[sitename]
+        except KeyError:
+            return self.NO_INFO.format(sitename)
+        site_mod_info.sort(key=lambda m: m['name'])
+        mod_pings = ' '.join(self.PING_FORMAT.format(m['id']) for m in site_mod_info)
+        return 'Pinging {} moderators: {}'.format(len(site_mod_info), mod_pings)
+
+moderators = dict()
+
+def update_moderators():
+    global moderators
+
+    with io.open('moderators.json', encoding='UTF-8') as f:
+        logger.debug('Opened moderator info file')
+        mod_info = json.load(f)
+
+    logger.info('Loaded moderator info file')
+    # Use a 'moderators' section so that we can combine the mod info with other
+    # config information in the same file, in the future, if desired
+    moderators = mod_info['moderators']
 
 def listen_to_room(email, password, room_id, host='stackexchange.com'):
     try:
@@ -122,7 +173,7 @@ def listen_to_room(email, password, room_id, host='stackexchange.com'):
         log.info('Terminating due to KeyboardInterrupt')
 
 def parse_config_file(filename):
-    with open(filename) as f:
+    with io.open(filename, encoding='UTF-8') as f:
         kv = (line.split('=', 1) for line in f if line.strip())
         cfg = dict((k.strip(), v.strip()) for k, v in kv)
     return cfg
@@ -132,6 +183,8 @@ def main():
     email = cfg.get('email') or raw_input("Email: ")
     password = cfg.get('password') or getpass.getpass("Password: ")
     room_id = cfg.get('room_id', 37817)
+
+    update_moderators()
 
     listen_to_room(email, password, room_id)
 
