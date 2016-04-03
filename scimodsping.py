@@ -55,6 +55,9 @@ class RoomProxy(object):
                 self._room.leave()
             else:
                 logger.info(u'Not leaving chat room')
+                # hopefully a delay helps allow the ChatExchange client to clear
+                # its queue and send the last message
+                time.sleep(0.5)
         finally:
             self._room = None
 
