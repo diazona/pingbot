@@ -22,8 +22,8 @@ class ChatExchangeSession(object):
     def listen(self, room_id):
         return RoomListener(self, room_id)
 
-PING_FORMAT = u'`@{}`'
-SUPERPING_FORMAT = u'`@@{}`'
+PING_FORMAT = u'@{}'
+SUPERPING_FORMAT = u'@@{}'
 
 def code_quote(s):
     return u'`{}`'.format(s.replace(u'`', u''))
