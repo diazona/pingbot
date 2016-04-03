@@ -36,7 +36,10 @@ class RoomProxy(object):
         self._room = self.session.client.get_room(self.room_id)
         self._room.join()
         logger.info('Joined room {}'.format(room_id))
-        self._room.send_message(format_message('Ping bot is now active'))
+        self.send('Ping bot is now active')
+
+    def send(self, message):
+        self._room.send_message(format_message(message))
 
     def close(self):
         logger.debug('Closing RoomProxy')
@@ -44,9 +47,9 @@ class RoomProxy(object):
             return
         try:
             try:
-                self._room.send_message(format_message('Ping bot is leaving'))
+                self.send('Ping bot is leaving')
             except:
-                pass
+                logger.exception('Error leaving chat room')
             if self.leave_room_on_close:
                 logger.info('Leaving chat room')
                 self._room.leave()
@@ -131,31 +134,38 @@ class Dispatcher(object):
 
     def dispatch(self, message):
         logger.debug('Dispatching message: {}'.format(message))
-        content = message.content.strip()
-        def reply(m):
-            reply_msg = format_message(m)
-            logger.debug('Replying with message: {}'.format(repr(reply_msg)))
-            message.reply(reply_msg)
-
-        if content == 'help me ping':
-            reply(HELP)
-            return
-        m = WHOIS.match(content)
-        if m:
-            reply(self.whois(m.group(1)))
-            return
-        m = ANYPING.match(content)
-        if m:
-            reply(self.ping_one(m.group(1), m.group(2)))
-            return
-        m = HEREPING.match(content)
-        if m:
-            reply(self.ping_present(m.group(1), m.group(2)))
-            return
-        m = ALLPING.match(content)
-        if m:
-            reply(self.ping_all(m.group(1), m.group(2)))
-            return
+        try:
+            def reply(m):
+                reply_msg = format_message(m)
+                logger.debug('Replying with message: {}'.format(repr(reply_msg)))
+                message.reply(reply_msg)
+            try:
+                content = message.content.strip()
+                if content == 'help me ping':
+                    reply(HELP)
+                    return
+                m = WHOIS.match(content)
+                if m:
+                    reply(self.whois(m.group(1)))
+                    return
+                m = ANYPING.match(content)
+                if m:
+                    reply(self.ping_one(m.group(1), m.group(2)))
+                    return
+                m = HEREPING.match(content)
+                if m:
+                    reply(self.ping_present(m.group(1), m.group(2)))
+                    return
+                m = ALLPING.match(content)
+                if m:
+                    reply(self.ping_all(m.group(1), m.group(2)))
+                    return
+            except:
+                logger.exception('Error dispatching message')
+                reply('Something went wrong, sorry!')
+        except:
+            logger.exception('Error sending reply')
+            self._room.send('Something went _really_ wrong, sorry!')
 
     def whois(self, sitename):
         '''Gives a list of mods of the given site.'''
