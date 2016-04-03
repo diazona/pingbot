@@ -9,12 +9,12 @@ import time
 import ChatExchange.chatexchange as ce
 
 def format_message(message):
-    return ('[auto]\n{}' if '\n' in message else '[auto] {}').format(message)
+    return (u'[auto]\n{}' if u'\n' in message else u'[auto] {}').format(message)
 
 class ChatExchangeSession(object):
     def __init__(self, email, password, host='stackexchange.com'):
         self.client = ce.client.Client(host, email, password)
-        logger.debug('Logging in as {}'.format(email))
+        logger.debug(u'Logging in as {}'.format(email))
     def __enter__(self):
         return self
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -22,11 +22,11 @@ class ChatExchangeSession(object):
     def listen(self, room_id):
         return RoomListener(self, room_id)
 
-PING_FORMAT = '`@{}`'
-SUPERPING_FORMAT = '`@@{}`'
+PING_FORMAT = u'`@{}`'
+SUPERPING_FORMAT = u'`@@{}`'
 
 def code_quote(s):
-    return '`{}`'.format(s.translate(None, '`'))
+    return u'`{}`'.format(s.replace(u'`', u''))
 
 class RoomProxy(object):
     def __init__(self, chatexchange_session, room_id, leave_room_on_close=True):
@@ -35,26 +35,26 @@ class RoomProxy(object):
         self.leave_room_on_close = leave_room_on_close
         self._room = self.session.client.get_room(self.room_id)
         self._room.join()
-        logger.info('Joined room {}'.format(room_id))
-        self.send('Ping bot is now active')
+        logger.info(u'Joined room {}'.format(room_id))
+        self.send(u'Ping bot is now active')
 
     def send(self, message):
         self._room.send_message(format_message(message))
 
     def close(self):
-        logger.debug('Closing RoomProxy')
+        logger.debug(u'Closing RoomProxy')
         if self._room is None:
             return
         try:
             try:
-                self.send('Ping bot is leaving')
+                self.send(u'Ping bot is leaving')
             except:
-                logger.exception('Error leaving chat room')
+                logger.exception(u'Error leaving chat room')
             if self.leave_room_on_close:
-                logger.info('Leaving chat room')
+                logger.info(u'Leaving chat room')
                 self._room.leave()
             else:
-                logger.info('Not leaving chat room')
+                logger.info(u'Not leaving chat room')
         finally:
             self._room = None
 
@@ -74,7 +74,7 @@ class RoomProxy(object):
         ping_format = code_quote(PING_FORMAT) if quote else PING_FORMAT
         superping_format = code_quote(SUPERPING_FORMAT) if quote else SUPERPING_FORMAT
         pingable_users = dict(zip(self._room.get_pingable_user_ids(), self._room.get_pingable_user_names()))
-        return [(ping_format.format(pingable_users[i].translate(None, ' ')) if i in pingable_users else superping_format.format(i)) for i in user_ids]
+        return [(ping_format.format(pingable_users[i].replace(u' ', u'')) if i in pingable_users else superping_format.format(i)) for i in user_ids]
 
     def get_current_user_ids(self, user_ids=None):
         current_user_ids = self._room.get_current_user_ids()
@@ -121,27 +121,27 @@ HELP = '''"whois [sitename] mods" works as in TL.
 "all [sitename] mods" pings all mods of the site, period.
 Pings can optionally be followed by a colon and a message.'''
 
-WHOIS = re.compile(r'whois (\w+) mods$')
-ANYPING = re.compile(r'(?:any )?(\w+) mod(?::\s*(.+))?$')
-HEREPING = re.compile(r'(\w+) mods(?::\s*(.+))?$')
-ALLPING = re.compile(r'all (\w+) mods(?::\s*(.+))?$')
+WHOIS = re.compile(ur'whois (\w+) mods$')
+ANYPING = re.compile(ur'(?:any )?(\w+) mod(?::\s*(.+))?$')
+HEREPING = re.compile(ur'(\w+) mods(?::\s*(.+))?$')
+ALLPING = re.compile(ur'all (\w+) mods(?::\s*(.+))?$')
 
 class Dispatcher(object):
-    NO_INFO = 'No moderator info for site {}.stackexchange.com.'
+    NO_INFO = u'No moderator info for site {}.stackexchange.com.'
 
     def __init__(self, room):
         self._room = room
 
     def dispatch(self, message):
-        logger.debug('Dispatching message: {}'.format(message))
+        logger.debug(u'Dispatching message: {}'.format(message))
         try:
             def reply(m):
                 reply_msg = format_message(m)
-                logger.debug('Replying with message: {}'.format(repr(reply_msg)))
+                logger.debug(u'Replying with message: {}'.format(repr(reply_msg)))
                 message.reply(reply_msg)
             try:
                 content = message.content.strip()
-                if content == 'help me ping':
+                if content == u'help me ping':
                     reply(HELP)
                     return
                 m = WHOIS.match(content)
@@ -161,11 +161,11 @@ class Dispatcher(object):
                     reply(self.ping_all(m.group(1), m.group(2)))
                     return
             except:
-                logger.exception('Error dispatching message')
-                reply('Something went wrong, sorry!')
+                logger.exception(u'Error dispatching message')
+                reply(u'Something went wrong, sorry!')
         except:
-            logger.exception('Error sending reply')
-            self._room.send('Something went _really_ wrong, sorry!')
+            logger.exception(u'Error sending reply')
+            self._room.send(u'Something went _really_ wrong, sorry!')
 
     def whois(self, sitename):
         '''Gives a list of mods of the given site.'''
@@ -178,19 +178,19 @@ class Dispatcher(object):
         current_mod_ids = set(self._room.get_current_user_ids())
 
         if current_mod_ids:
-            return 'I know of {} moderators on {}.stackexchange.com. Currently in this room: {}. Not currently in this room: {} (superping with {}).'.format(
+            return u'I know of {} moderators on {}.stackexchange.com. Currently in this room: {}. Not currently in this room: {} (superping with {}).'.format(
                 len(site_mod_info),
                 sitename,
-                ', '.join(m['name'] for m in site_mod_info if m['id'] in current_mod_ids),
-                ', '.join(m['name'] for m in site_mod_info if m['id'] not in current_mod_ids),
-                code_quote(' '.join(self._room.get_ping_strings([m['id'] for m in site_mod_info if m['id'] not in current_mod_ids])))
+                u', '.join(m['name'] for m in site_mod_info if m['id'] in current_mod_ids),
+                u', '.join(m['name'] for m in site_mod_info if m['id'] not in current_mod_ids),
+                code_quote(u' '.join(self._room.get_ping_strings([m['id'] for m in site_mod_info if m['id'] not in current_mod_ids])))
             )
         else:
-            return 'I know of {} moderators on {}.stackexchange.com: {}. None are currently in this room. Superping with {}.'.format(
+            return u'I know of {} moderators on {}.stackexchange.com: {}. None are currently in this room. Superping with {}.'.format(
                 len(site_mod_info),
                 sitename,
-                ', '.join(m['name'] for m in site_mod_info),
-                code_quote(' '.join(self._room.get_ping_strings(m['id'] for m in site_mod_info)))
+                u', '.join(m['name'] for m in site_mod_info),
+                code_quote(u' '.join(self._room.get_ping_strings(m['id'] for m in site_mod_info)))
             )
 
     def ping_one(self, sitename, message=None):
@@ -206,9 +206,9 @@ class Dispatcher(object):
 
         mod_ping = self._room.get_ping_string(random.choice(list(current_site_mod_ids or site_mod_ids)))
         if message:
-            return '{}: {}'.format(mod_ping, message)
+            return u'{}: {}'.format(mod_ping, message)
         else:
-            return 'Pinging one moderator: {}'.format(mod_ping)
+            return u'Pinging one moderator: {}'.format(mod_ping)
 
     def ping_present(self, sitename, message=None):
         '''Sends a ping to all currently present mods from the chosen site.'''
@@ -220,11 +220,11 @@ class Dispatcher(object):
         site_mod_ids = set(m['id'] for m in site_mod_info)
         current_mod_ids = set(self._room.get_current_user_ids())
         current_site_mod_ids = site_mod_ids & current_mod_ids
-        mod_pings = ' '.join(self._room.get_ping_strings(current_site_mod_ids))
+        mod_pings = u' '.join(self._room.get_ping_strings(current_site_mod_ids))
         if message:
-            return '{}: {}'.format(mod_pings, message)
+            return u'{}: {}'.format(mod_pings, message)
         else:
-            return 'Pinging {} moderator{}: {}'.format(len(current_site_mod_ids), 's' if len(current_site_mod_ids) != 1 else '', mod_pings)
+            return u'Pinging {} moderator{}: {}'.format(len(current_site_mod_ids), u's' if len(current_site_mod_ids) != 1 else u'', mod_pings)
 
     def ping_all(self, sitename, message=None):
         '''Sends a ping to all mods from the chosen site.'''
@@ -234,11 +234,11 @@ class Dispatcher(object):
             return self.NO_INFO.format(sitename)
 
         site_mod_info.sort(key=lambda m: m['name'])
-        mod_pings = ' '.join(self._room.get_ping_strings(m['id'] for m in site_mod_info))
+        mod_pings = u' '.join(self._room.get_ping_strings(m['id'] for m in site_mod_info))
         if message:
-            return '{}: {}'.format(mod_pings, message)
+            return u'{}: {}'.format(mod_pings, message)
         else:
-            return 'Pinging {} moderators: {}'.format(len(site_mod_info), mod_pings)
+            return u'Pinging {} moderators: {}'.format(len(site_mod_info), mod_pings)
 
 moderators = dict()
 
@@ -246,10 +246,10 @@ def update_moderators():
     global moderators
 
     with io.open('moderators.json', encoding='UTF-8') as f:
-        logger.debug('Opened moderator info file')
+        logger.debug(u'Opened moderator info file')
         mod_info = json.load(f)
 
-    logger.info('Loaded moderator info file')
+    logger.info(u'Loaded moderator info file')
     # Use a 'moderators' section so that we can combine the mod info with other
     # config information in the same file, in the future, if desired
     moderators = mod_info['moderators']
@@ -262,11 +262,11 @@ def listen_to_room(email, password, room_id, host='stackexchange.com', leave_roo
                 for message in room:
                     dispatcher.dispatch(message)
     except KeyboardInterrupt:
-        logger.info('Terminating due to KeyboardInterrupt')
+        logger.info(u'Terminating due to KeyboardInterrupt')
 
 def parse_config_file(filename):
     with io.open(filename, encoding='UTF-8') as f:
-        kv = (line.split('=', 1) for line in f if line.strip())
+        kv = (line.split(u'=', 1) for line in f if line.strip())
         cfg = dict((k.strip(), v.strip()) for k, v in kv)
     return cfg
 
@@ -280,18 +280,18 @@ def initialize_logging():
     except:
         logging.basicConfig(level=logging.WARNING)
         logger = logging.getLogger('scimodsping')
-        logger.exception('Unable to open logging config file')
+        logger.exception(u'Unable to open logging config file')
 
 def main():
     initialize_logging()
 
-    logger.info('Starting scimodsping SE chat bot')
+    logger.info(u'Starting scimodsping SE chat bot')
 
     cfg = parse_config_file('scimodsping.cfg')
-    email = cfg.get('email') or raw_input("Email: ")
-    password = cfg.get('password') or getpass.getpass("Password: ")
-    room_id = cfg.get('room_id', 37817)
-    leave_room_on_close = cfg.get('leave_on_close', 'true') in ('true', 'True', '1', 'yes')
+    email = cfg.get(u'email') or raw_input('Email: ')
+    password = cfg.get(u'password') or getpass.getpass('Password: ')
+    room_id = cfg.get(u'room_id', 37817)
+    leave_room_on_close = cfg.get(u'leave_on_close', u'true') in (u'true', u'True', u'1', u'yes')
 
     update_moderators()
 
