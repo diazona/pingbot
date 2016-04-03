@@ -197,7 +197,7 @@ def listen_to_room(email, password, room_id, host='stackexchange.com'):
                 for message in room:
                     dispatcher.dispatch(message)
     except KeyboardInterrupt:
-        log.info('Terminating due to KeyboardInterrupt')
+        logger.info('Terminating due to KeyboardInterrupt')
 
 def parse_config_file(filename):
     with io.open(filename, encoding='UTF-8') as f:
