@@ -29,23 +29,29 @@ def code_quote(s):
     return '`{}`'.format(s.translate(None, '`'))
 
 class RoomProxy(object):
-    def __init__(self, chatexchange_session, room_id):
+    def __init__(self, chatexchange_session, room_id, leave_room_on_close=True):
         self.session = chatexchange_session
         self.room_id = room_id
+        self.leave_room_on_close = leave_room_on_close
         self._room = self.session.client.get_room(self.room_id)
         self._room.join()
         logger.info('Joined room {}'.format(room_id))
         self._room.send_message(format_message('Ping bot is now active'))
 
     def close(self):
+        logger.debug('Closing RoomProxy')
         if self._room is None:
             return
         try:
-            self._room.send_message(format_message('Ping bot is leaving'))
-        except:
-            pass
-        try:
-            self._room.leave()
+            try:
+                self._room.send_message(format_message('Ping bot is leaving'))
+            except:
+                pass
+            if self.leave_room_on_close:
+                logger.info('Leaving chat room')
+                self._room.leave()
+            else:
+                logger.info('Not leaving chat room')
         finally:
             self._room = None
 
@@ -238,10 +244,10 @@ def update_moderators():
     # config information in the same file, in the future, if desired
     moderators = mod_info['moderators']
 
-def listen_to_room(email, password, room_id, host='stackexchange.com'):
+def listen_to_room(email, password, room_id, host='stackexchange.com', leave_room_on_close=True):
     try:
         with ChatExchangeSession(email, password, host) as ce:
-            with RoomProxy(ce, room_id) as room:
+            with RoomProxy(ce, room_id, leave_room_on_close) as room:
                 dispatcher = Dispatcher(room)
                 for message in room:
                     dispatcher.dispatch(message)
@@ -275,10 +281,11 @@ def main():
     email = cfg.get('email') or raw_input("Email: ")
     password = cfg.get('password') or getpass.getpass("Password: ")
     room_id = cfg.get('room_id', 37817)
+    leave_room_on_close = cfg.get('leave_on_close', 'true') in ('true', 'True', '1', 'yes')
 
     update_moderators()
 
-    listen_to_room(email, password, room_id)
+    listen_to_room(email, password, room_id, leave_room_on_close=leave_room_on_close)
 
 if __name__ == '__main__':
     main()
