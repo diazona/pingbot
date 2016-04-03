@@ -186,14 +186,14 @@ class Dispatcher(object):
                 sitename,
                 u', '.join(m['name'] for m in site_mod_info if m['id'] in current_site_mod_ids),
                 u', '.join(m['name'] for m in site_mod_info if m['id'] not in current_site_mod_ids),
-                code_quote(u' '.join(self._room.get_ping_strings([m['id'] for m in site_mod_info if m['id'] not in current_site_mod_ids])))
+                u' '.join(self._room.get_ping_strings([m['id'] for m in site_mod_info if m['id'] not in current_site_mod_ids], quote=True))
             )
         else:
             return u'I know of {} moderators on {}.stackexchange.com: {}. None are currently in this room. Superping with {}.'.format(
                 len(site_mod_info),
                 sitename,
                 u', '.join(m['name'] for m in site_mod_info),
-                code_quote(u' '.join(self._room.get_ping_strings(m['id'] for m in site_mod_info)))
+                u' '.join(self._room.get_ping_strings([m['id'] for m in site_mod_info], quote=True))
             )
 
     def ping_one(self, sitename, message=None):
