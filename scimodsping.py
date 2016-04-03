@@ -113,10 +113,17 @@ class Dispatcher(object):
             site_mod_info = moderators[sitename]
         except KeyError:
             return self.NO_INFO.format(sitename)
-        site_mod_info.sort(key=lambda m: m['name'])
-        mod_names = ', '.join(m['name'] for m in site_mod_info)
-        mod_pings = ' '.join(self.QUOTE_PING_FORMAT.format(m['id']) for m in site_mod_info)
-        return 'I know of {} moderators on {}.stackexchange.com: {}. Superping with {}'.format(len(site_mod_info), sitename, mod_names, mod_pings)
+
+        site_mod_info.sort(key=lambda m: m['name'].lower())
+        current_mod_ids = set(self._room.get_current_user_ids())
+
+        return 'I know of {} moderators on {}.stackexchange.com. Currently in this room: {}. Not currently in this room: {} (superping with {}).'.format(
+            len(site_mod_info),
+            sitename,
+            ', '.join(m['name'] for m in site_mod_info if m['id'] in current_mod_ids),
+            ', '.join(m['name'] for m in site_mod_info if m['id'] not in current_mod_ids),
+            ' '.join(self.QUOTE_PING_FORMAT.format(m['id']) for m in site_mod_info if m['id'] not in current_mod_ids)
+        )
 
     def ping_one(self, sitename, message=None):
         '''Sends a ping to one mod from the chosen site.'''
@@ -124,7 +131,15 @@ class Dispatcher(object):
             site_mod_info = moderators[sitename]
         except KeyError:
             return self.NO_INFO.format(sitename)
-        mod_ping = self.PING_FORMAT.format(random.choice(site_mod_info)['id'])
+
+        site_mod_ids = set(m['id'] for m in site_mod_info)
+        current_mod_ids = set(self._room.get_current_user_ids())
+        current_site_mod_ids = site_mod_ids & current_mod_ids
+
+        if current_site_mod_ids:
+            mod_ping = self.PING_FORMAT.format(random.choice(current_site_mod_ids))
+        else:
+            mod_ping = self.PING_FORMAT.format(random.choice(site_mod_ids))
         if message:
             return '{}: {}'.format(mod_ping, message)
         else:
@@ -136,6 +151,7 @@ class Dispatcher(object):
             site_mod_info = moderators[sitename]
         except KeyError:
             return self.NO_INFO.format(sitename)
+
         site_mod_ids = set(m['id'] for m in site_mod_info)
         current_mod_ids = set(self._room.get_current_user_ids())
         current_site_mod_ids = site_mod_ids & current_mod_ids
@@ -151,6 +167,7 @@ class Dispatcher(object):
             site_mod_info = moderators[sitename]
         except KeyError:
             return self.NO_INFO.format(sitename)
+
         site_mod_info.sort(key=lambda m: m['name'])
         mod_pings = ' '.join(self.PING_FORMAT.format(m['id']) for m in site_mod_info)
         if message:
