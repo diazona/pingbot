@@ -63,12 +63,13 @@ class RoomListener(object):
 HELP = '''"whois [sitename] mods" works as in TL.
 "[sitename] mod" or "any [sitename] mod" pings a single mod of the site, one who is in the room if possible.
 "[sitename] mods" pings all mods of the site currently in the room, or if none are present, does nothing.
-"all [sitename] mods" pings all mods of the site, period.'''
+"all [sitename] mods" pings all mods of the site, period.
+Pings can optionally be followed by a colon and a message.'''
 
 WHOIS = re.compile(r'whois (\w+) mods$')
-ANYPING = re.compile(r'(?:any )?(\w+) mod')
-HEREPING = re.compile(r'(\w+) mods')
-ALLPING = re.compile(r'all (\w+) mods')
+ANYPING = re.compile(r'(?:any )?(\w+) mod(?::\s*(.+))?$')
+HEREPING = re.compile(r'(\w+) mods(?::\s*(.+))?$')
+ALLPING = re.compile(r'all (\w+) mods(?::\s*(.+))?$')
 
 class Dispatcher(object):
     NO_INFO = 'No moderator info for site {}.stackexchange.com.'
@@ -95,15 +96,15 @@ class Dispatcher(object):
             return
         m = ANYPING.match(content)
         if m:
-            reply(self.ping_one(m.group(1)))
+            reply(self.ping_one(m.group(1), m.group(2)))
             return
         m = HEREPING.match(content)
         if m:
-            reply(self.ping_present(m.group(1)))
+            reply(self.ping_present(m.group(1), m.group(2)))
             return
         m = ALLPING.match(content)
         if m:
-            reply(self.ping_all(m.group(1)))
+            reply(self.ping_all(m.group(1), m.group(2)))
             return
 
     def whois(self, sitename):
@@ -117,16 +118,19 @@ class Dispatcher(object):
         mod_pings = ' '.join(self.QUOTE_PING_FORMAT.format(m['id']) for m in site_mod_info)
         return 'I know of {} moderators on {}.stackexchange.com: {}. Superping with {}'.format(len(site_mod_info), sitename, mod_names, mod_pings)
 
-    def ping_one(self, sitename):
+    def ping_one(self, sitename, message=None):
         '''Sends a ping to one mod from the chosen site.'''
         try:
             site_mod_info = moderators[sitename]
         except KeyError:
             return self.NO_INFO.format(sitename)
         mod_ping = self.PING_FORMAT.format(random.choice(site_mod_info)['id'])
-        return 'Pinging one moderator: {}'.format(mod_ping)
+        if message:
+            return '{}: {}'.format(mod_ping, message)
+        else:
+            return 'Pinging one moderator: {}'.format(mod_ping)
 
-    def ping_present(self, sitename):
+    def ping_present(self, sitename, message=None):
         '''Sends a ping to all currently present mods from the chosen site.'''
         try:
             site_mod_info = moderators[sitename]
@@ -136,9 +140,12 @@ class Dispatcher(object):
         current_mod_ids = set(self._room.get_current_user_ids())
         current_site_mod_ids = site_mod_ids & current_mod_ids
         mod_pings = ' '.join(self.PING_FORMAT.format(n) for n in current_site_mod_ids)
-        return 'Pinging {} moderator{}: {}'.format(len(current_site_mod_ids), 's' if len(current_site_mod_ids) != 1 else '', mod_pings)
+        if message:
+            return '{}: {}'.format(mod_pings, message)
+        else:
+            return 'Pinging {} moderator{}: {}'.format(len(current_site_mod_ids), 's' if len(current_site_mod_ids) != 1 else '', mod_pings)
 
-    def ping_all(self, sitename):
+    def ping_all(self, sitename, message=None):
         '''Sends a ping to all mods from the chosen site.'''
         try:
             site_mod_info = moderators[sitename]
@@ -146,7 +153,10 @@ class Dispatcher(object):
             return self.NO_INFO.format(sitename)
         site_mod_info.sort(key=lambda m: m['name'])
         mod_pings = ' '.join(self.PING_FORMAT.format(m['id']) for m in site_mod_info)
-        return 'Pinging {} moderators: {}'.format(len(site_mod_info), mod_pings)
+        if message:
+            return '{}: {}'.format(mod_pings, message)
+        else:
+            return 'Pinging {} moderators: {}'.format(len(site_mod_info), mod_pings)
 
 moderators = dict()
 
