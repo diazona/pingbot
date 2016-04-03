@@ -1,0 +1,298 @@
+{
+  "moderators": {
+    "math": [
+      {
+        "name": "Alexander Gruber",
+        "id": 18471
+      },
+      {
+        "name": "Daniel Fischer",
+        "id": 38554
+      },
+      {
+        "name": "err crush faith",
+        "id": 34511
+      },
+      {
+        "name": "Jyrki Lahtonen",
+        "id": 16174
+      },
+      {
+        "name": "Mariano Su\u00e1rez-Alvarez",
+        "id": 126
+      },
+      {
+        "name": "Michael Greinecker",
+        "id": 27136
+      },
+      {
+        "name": "mixedmath",
+        "id": 13344
+      },
+      {
+        "name": "Pedro Tamaroff",
+        "id": 30951
+      },
+      {
+        "name": "robjohn",
+        "id": 20249
+      }
+    ],
+    "linguistics": [
+      {
+        "name": "Alenanno",
+        "id": 11274
+      },
+      {
+        "name": "Otavio Macedo",
+        "id": 16148
+      },
+      {
+        "name": "prash",
+        "id": 23745
+      }
+    ],
+    "tcs": [
+      {
+        "name": "Artem Kaznatcheev",
+        "id": 865
+      },
+      {
+        "name": "Lev Reyzin",
+        "id": 614
+      },
+      {
+        "name": "Suresh Venkat",
+        "id": 663
+      }
+    ],
+    "cogsci": [
+      {
+        "name": "Artem Kaznatcheev",
+        "id": 865
+      },
+      {
+        "name": "Jeromy Anglim",
+        "id": 354
+      },
+      {
+        "name": "Josh Gitlin",
+        "id": 637
+      },
+      {
+        "name": "Steven Jeuris",
+        "id": 13382
+      }
+    ],
+    "philosophy": [
+      {
+        "name": "Joseph Weissman",
+        "id": 18228
+      },
+      {
+        "name": "stoicfury",
+        "id": 22227
+      },
+      {
+        "name": "virmaior",
+        "id": 115539
+      }
+    ],
+    "hsm": [
+      {
+        "name": "Danu",
+        "id": 77717
+      },
+      {
+        "name": "HDE 226868",
+        "id": 124559
+      },
+      {
+        "name": "Logan M",
+        "id": 23525
+      }
+    ],
+    "chemistry": [
+      {
+        "name": "jonsca",
+        "id": 12913
+      },
+      {
+        "name": "ManishEarth",
+        "id": 31768
+      },
+      {
+        "name": "Martin - &#12510;&#12540;&#12481;&#12531;",
+        "id": 113953
+      }
+    ],
+    "stats": [
+      {
+        "name": "cardinal",
+        "id": 6798
+      },
+      {
+        "name": "chl",
+        "id": 198
+      },
+      {
+        "name": "Glen_b",
+        "id": 50918
+      },
+      {
+        "name": "mbq",
+        "id": 18
+      },
+      {
+        "name": "Peter Flom",
+        "id": 23602
+      },
+      {
+        "name": "Scortchi",
+        "id": 75754
+      },
+      {
+        "name": "whuber",
+        "id": 336
+      }
+    ],
+    "cs": [
+      {
+        "name": "D.W.",
+        "id": 23888
+      },
+      {
+        "name": "Gilles",
+        "id": 240
+      },
+      {
+        "name": "Raphael",
+        "id": 6123
+      }
+    ],
+    "mo": [
+      {
+        "name": "Ben Webster",
+        "id": 56983
+      },
+      {
+        "name": "David Zureick-Brown",
+        "id": 3271
+      },
+      {
+        "name": "Fran\u00e7ois G. Dorais",
+        "id": 1592
+      },
+      {
+        "name": "Mariano Su\u00e1rez-Alvarez",
+        "id": 126
+      },
+      {
+        "name": "S. Carnahan",
+        "id": 81909
+      },
+      {
+        "name": "Scott Morrison",
+        "id": 12391
+      },
+      {
+        "name": "Todd Trimble",
+        "id": 82485
+      }
+    ],
+    "matheducators": [
+      {
+        "name": "quid",
+        "id": 83129
+      },
+      {
+        "name": "Sue VanHattum",
+        "id": 112450
+      }
+    ],
+    "earthscience": [
+      {
+        "name": "casey",
+        "id": 101443
+      },
+      {
+        "name": "gerrit",
+        "id": 27003
+      },
+      {
+        "name": "hichris123",
+        "id": 103081
+      }
+    ],
+    "physics": [
+      {
+        "name": "David Z",
+        "id": 1369
+      },
+      {
+        "name": "dmckee",
+        "id": 2015
+      },
+      {
+        "name": "ManishEarth",
+        "id": 31768
+      },
+      {
+        "name": "Qmechanic",
+        "id": 9953
+      }
+    ],
+    "compsci": [
+      {
+        "name": "Geoff Oxberry",
+        "id": 30456
+      },
+      {
+        "name": "Paul",
+        "id": 30545
+      }
+    ],
+    "astronomy": [
+      {
+        "name": "called2voyage",
+        "id": 81757
+      },
+      {
+        "name": "Donald.McLean",
+        "id": 33740
+      },
+      {
+        "name": "RhysW",
+        "id": 63681
+      }
+    ],
+    "biology": [
+      {
+        "name": "Chris",
+        "id": 103322
+      },
+      {
+        "name": "Mad Scientist",
+        "id": 180
+      },
+      {
+        "name": "WYSIWYG",
+        "id": 72980
+      }
+    ],
+    "economics": [
+      {
+        "name": "Jason Nichols",
+        "id": 132641
+      },
+      {
+        "name": "jmbejara",
+        "id": 66862
+      },
+      {
+        "name": "Ubiquitous",
+        "id": 132898
+      }
+    ]
+  }
+}
