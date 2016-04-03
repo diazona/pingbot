@@ -1,14 +1,12 @@
 #!/usr/bin/env python2
 
 import io
-import logging
+import logging, logging.config
 import json
 import random
 import re
 import time
 import ChatExchange.chatexchange as ce
-
-logger = logging.getLogger('scimodsping')
 
 def format_message(message):
     return ('[auto]\n{}' if '\n' in message else '[auto] {}').format(message)
@@ -256,7 +254,23 @@ def parse_config_file(filename):
         cfg = dict((k.strip(), v.strip()) for k, v in kv)
     return cfg
 
+def initialize_logging():
+    global logger
+
+    try:
+        # Needs to be done before creating the logger
+        logging.config.fileConfig('scimodsping-logging.cfg')
+        logger = logging.getLogger('scimodsping')
+    except:
+        logging.basicConfig(level=logging.WARNING)
+        logger = logging.getLogger('scimodsping')
+        logger.exception('Unable to open logging config file')
+
 def main():
+    initialize_logging()
+
+    logger.info('Starting scimodsping SE chat bot')
+
     cfg = parse_config_file('scimodsping.cfg')
     email = cfg.get('email') or raw_input("Email: ")
     password = cfg.get('password') or getpass.getpass("Password: ")
