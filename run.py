@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 
+import ConfigParser
 import io
 
 def parse_config_file(filename):
@@ -8,25 +9,42 @@ def parse_config_file(filename):
         cfg = dict((k.strip(), v.strip()) for k, v in kv)
     return cfg
 
-def initialize_logging():
+def initialize_logging(filename=None):
     # Needs to be done before creating the logger
     import logging, logging.config
 
-    try:
-        logging.config.fileConfig('pingbot-logging.cfg')
-        logger = logging.getLogger('pingbot')
-    except:
+    if filename:
+        try:
+            logging.config.fileConfig(filename)
+        except:
+            logging.basicConfig(level=logging.WARNING)
+            logging.getLogger('pingbot').exception(u'Unable to open logging config file')
+    else:
         logging.basicConfig(level=logging.WARNING)
-        logger.exception(u'Unable to open logging config file')
 
 def main():
-    initialize_logging()
+    cfg_filename = 'pingbot.cfg'
 
-    cfg = parse_config_file('pingbot.cfg')
-    email = cfg.get(u'email') or raw_input('Email: ')
-    password = cfg.get(u'password') or getpass.getpass('Password: ')
-    room_id = cfg.get(u'room_id', 37817)
-    leave_room_on_close = cfg.get(u'leave_on_close', u'true') in (u'true', u'True', u'1', u'yes')
+    initialize_logging(cfg_filename)
+
+    cfg = ConfigParser.RawConfigParser()
+    cfg.read('pingbot.cfg')
+    try:
+        email = cfg.get(u'user', u'email')
+    except ConfigParser.NoOptionError:
+        email = raw_input('Email: ')
+    try:
+        password = cfg.get(u'user', u'password')
+    except ConfigParser.NoOptionError:
+        getpass.getpass('Password: ')
+    try:
+        room_id = cfg.get(u'room', u'id')
+    except ConfigParser.NoOptionError:
+        room_id = 37817
+    try:
+        leave_room_on_close = cfg.getboolean(u'user', u'leave_on_close')
+    except ConfigParser.NoOptionError:
+        leave_room_on_close = True
 
     import pingbot
 
