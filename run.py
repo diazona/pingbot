@@ -48,7 +48,11 @@ def main():
 
     import pingbot
 
-    pingbot.update_moderators()
+    try:
+        pingbot.update_moderators(cfg.get(u'moderators', u'filename'))
+    except ConfigParser.NoOptionError:
+        pingbot.update_moderators()
+
     pingbot.listen_to_room(email, password, room_id, leave_room_on_close=leave_room_on_close)
 
 if __name__ == '__main__':

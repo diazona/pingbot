@@ -245,10 +245,10 @@ class Dispatcher(object):
 
 moderators = dict()
 
-def update_moderators():
+def update_moderators(filename='moderators.json'):
     global moderators
 
-    with io.open('moderators.json', encoding='UTF-8') as f:
+    with io.open(filename, encoding='UTF-8') as f:
         logger.debug(u'Opened moderator info file')
         mod_info = json.load(f)
 
