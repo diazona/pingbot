@@ -278,19 +278,19 @@ def initialize_logging():
 
     try:
         # Needs to be done before creating the logger
-        logging.config.fileConfig('scimodsping-logging.cfg')
-        logger = logging.getLogger('scimodsping')
+        logging.config.fileConfig('pingbot-logging.cfg')
+        logger = logging.getLogger('pingbot')
     except:
         logging.basicConfig(level=logging.WARNING)
-        logger = logging.getLogger('scimodsping')
+        logger = logging.getLogger('pingbot')
         logger.exception(u'Unable to open logging config file')
 
 def main():
     initialize_logging()
 
-    logger.info(u'Starting scimodsping SE chat bot')
+    logger.info(u'Starting pingbot SE chat bot')
 
-    cfg = parse_config_file('scimodsping.cfg')
+    cfg = parse_config_file('pingbot.cfg')
     email = cfg.get(u'email') or raw_input('Email: ')
     password = cfg.get(u'password') or getpass.getpass('Password: ')
     room_id = cfg.get(u'room_id', 37817)

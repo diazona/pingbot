@@ -19,5 +19,4 @@ proj.directory-list = [{'dirloc': loc('.'),
                         'include_hidden': False,
                         'recursive': True,
                         'watch_for_changes': True}]
-proj.file-list = [loc('scimodsping.py')]
 proj.file-type = 'shared'
