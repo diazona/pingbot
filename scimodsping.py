@@ -181,7 +181,7 @@ class Dispatcher(object):
         current_site_mod_ids = set(m['id'] for m in site_mod_info) & set(self._room.get_current_user_ids())
 
         if current_site_mod_ids:
-            return u'I know of {} moderators on {}.stackexchange.com. Currently in this room: {}. Not currently in this room: {} (superping with {}).'.format(
+            return u'I know of {} moderators on {}.stackexchange.com. Currently in this room: {}. Not currently in this room: {} (ping with {}).'.format(
                 len(site_mod_info),
                 sitename,
                 u', '.join(m['name'] for m in site_mod_info if m['id'] in current_site_mod_ids),
@@ -189,7 +189,7 @@ class Dispatcher(object):
                 u' '.join(self._room.get_ping_strings([m['id'] for m in site_mod_info if m['id'] not in current_site_mod_ids], quote=True))
             )
         else:
-            return u'I know of {} moderators on {}.stackexchange.com: {}. None are currently in this room. Superping with {}.'.format(
+            return u'I know of {} moderators on {}.stackexchange.com: {}. None are currently in this room. Ping with {}.'.format(
                 len(site_mod_info),
                 sitename,
                 u', '.join(m['name'] for m in site_mod_info),
