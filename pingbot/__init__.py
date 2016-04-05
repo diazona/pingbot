@@ -7,7 +7,8 @@ import time
 from ChatExchange.chatexchange.events import MessagePosted
 
 from .moderators import moderators, update as update_moderators
-from .stackexchange_chat import ChatExchangeSession, RoomProxy, format_message
+from .stackexchange_chat import ChatExchangeSession, RoomProxy as SERoomProxy
+from .terminal_chat import RoomProxy as TerminalRoomProxy
 
 logger = logging.getLogger('pingbot')
 
@@ -43,7 +44,7 @@ class Dispatcher(object):
 
     def on_event(self, event, client):
         logger.debug(u'Received event: {}'.format(repr(event)))
-        if not isinstance(event, MessagePosted):
+        if not event.type_id == MessagePosted.type_id: # I would like to get rid of this dependence on MessagePosted
             return
         self.dispatch(event.content, event.message)
 
@@ -153,14 +154,21 @@ class Dispatcher(object):
         else:
             return u'Pinging {} moderators: {}'.format(len(site_mod_info), mod_pings)
 
-def listen_to_room(email, password, room_id, host='stackexchange.com', leave_room_on_close=True):
+def _listen_to_room(room):
+    dp = Dispatcher(room.send, room)
+    room.watch(dp.on_event)
+    while room.active:
+        # wait for an interruption
+        time.sleep(1)
+
+def listen_to_chat_room(email, password, room_id, host='stackexchange.com', leave_room_on_close=True):
     try:
         with ChatExchangeSession(email, password, host) as ce:
-            with RoomProxy(ce, room_id, leave_room_on_close) as room:
-                dp = Dispatcher(room.send, room)
-                room.watch(dp.on_event)
-                while True:
-                    # wait for an interruption
-                    time.sleep(1)
+            with SERoomProxy(ce, room_id, leave_room_on_close) as room:
+                _listen_to_room(room)
     except KeyboardInterrupt:
         logger.info(u'Terminating due to KeyboardInterrupt')
+
+def listen_to_terminal_room(leave_room_on_close=True):
+    with TerminalRoomProxy(leave_room_on_close) as room:
+        _listen_to_room(room)

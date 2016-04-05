@@ -2,6 +2,7 @@
 
 import ConfigParser
 import io
+import sys
 
 def parse_config_file(filename):
     with io.open(filename, encoding='UTF-8') as f:
@@ -23,24 +24,20 @@ def initialize_logging(filename=None):
         logging.basicConfig(level=logging.WARNING)
 
 def main():
-    cfg_filename = 'pingbot.cfg'
+    try:
+        cfg_filename = sys.argv[1]
+    except IndexError:
+        cfg_filename = 'pingbot.cfg'
 
     initialize_logging(cfg_filename)
 
     cfg = ConfigParser.RawConfigParser()
-    cfg.read('pingbot.cfg')
-    try:
-        email = cfg.get(u'user', u'email')
-    except ConfigParser.NoOptionError:
-        email = raw_input('Email: ')
-    try:
-        password = cfg.get(u'user', u'password')
-    except ConfigParser.NoOptionError:
-        getpass.getpass('Password: ')
+    cfg.read(cfg_filename)
+
     try:
         room_id = cfg.get(u'room', u'id')
     except ConfigParser.NoOptionError:
-        room_id = 37817
+        room_id = 'terminal'
     try:
         leave_room_on_close = cfg.getboolean(u'user', u'leave_on_close')
     except ConfigParser.NoOptionError:
@@ -53,7 +50,19 @@ def main():
     except ConfigParser.NoOptionError:
         pingbot.update_moderators()
 
-    pingbot.listen_to_room(email, password, room_id, leave_room_on_close=leave_room_on_close)
+    if room_id in ('0', 'terminal'):
+        pingbot.listen_to_terminal_room(leave_room_on_close=leave_room_on_close)
+    else:
+        try:
+            email = cfg.get(u'user', u'email')
+        except ConfigParser.NoOptionError:
+            email = raw_input('Email: ')
+        try:
+            password = cfg.get(u'user', u'password')
+        except ConfigParser.NoOptionError:
+            getpass.getpass('Password: ')
+
+        pingbot.listen_to_chat_room(email, password, room_id, leave_room_on_close=leave_room_on_close)
 
 if __name__ == '__main__':
     main()

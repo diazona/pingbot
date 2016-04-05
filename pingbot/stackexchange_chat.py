@@ -35,6 +35,7 @@ class RoomProxy(object):
         self.leave_room_on_close = leave_room_on_close
         self._room = self.session.client.get_room(self.room_id)
         self._room.join()
+        self.active = True
         logger.info(u'Joined room {}'.format(room_id))
         self.send(u'Ping bot is now active')
 
@@ -45,6 +46,9 @@ class RoomProxy(object):
         self._room.watch_polling(event_callback, interval)
 
     def send(self, message, reply_target=None):
+        if not self.active:
+            logger.debug(u'Not sending message to inactive room')
+            return
         message = format_message(message)
         if reply_target:
             logger.debug(u'Replying with message: {}'.format(repr(message)))
@@ -54,9 +58,10 @@ class RoomProxy(object):
             self._room.send_message(message)
 
     def close(self):
-        logger.debug(u'Closing RoomProxy')
-        if self._room is None:
+        if not self.active:
             return
+        self.active = False
+        logger.debug(u'Closing RoomProxy')
         try:
             try:
                 self.send(u'Ping bot is leaving')
