@@ -38,8 +38,9 @@ class RoomProxy(object):
     stdout. It also includes dummy implementations of the methods that check for
     current or pingable users, but it doesn't have a concept of room membership;
     instead it acts as if nobody is ever in the chat room.'''
-    def __init__(self, leave_room_on_close=True):
+    def __init__(self, leave_room_on_close=True, silent=False):
         self.leave_room_on_close = leave_room_on_close
+        self.silent = silent
         logger.info(u'Joined fake terminal room')
         self.send(u'Ping bot is now active')
         self._input_thread = threading.Thread(target=self._read)
@@ -71,6 +72,12 @@ class RoomProxy(object):
         self.watch(event_callback)
 
     def send(self, message, reply_target=None):
+        if not self.active:
+            logger.debug(u'Not sending message to inactive room')
+            return
+        if self.silent:
+            logger.debug(u'Not sending message due to silent mode')
+            return
         message = format_message(message)
         if reply_target:
             logger.debug(u'Replying with message: {}'.format(repr(message)))

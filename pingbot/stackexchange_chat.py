@@ -29,10 +29,11 @@ def code_quote(s):
     return u'`{}`'.format(s.replace(u'`', u''))
 
 class RoomProxy(object):
-    def __init__(self, chatexchange_session, room_id, leave_room_on_close=True):
+    def __init__(self, chatexchange_session, room_id, leave_room_on_close=True, silent=False):
         self.session = chatexchange_session
         self.room_id = room_id
         self.leave_room_on_close = leave_room_on_close
+        self.silent = silent
         self._room = self.session.client.get_room(self.room_id)
         self._room.join()
         self.active = True
@@ -48,6 +49,9 @@ class RoomProxy(object):
     def send(self, message, reply_target=None):
         if not self.active:
             logger.debug(u'Not sending message to inactive room')
+            return
+        if self.silent:
+            logger.debug(u'Not sending message due to silent mode')
             return
         message = format_message(message)
         if reply_target:
