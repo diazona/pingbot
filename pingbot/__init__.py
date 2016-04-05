@@ -2,6 +2,9 @@ import io
 import logging
 import random
 import re
+import time
+
+from ChatExchange.chatexchange.events import MessagePosted
 
 from .moderators import moderators, update as update_moderators
 from .stackexchange_chat import ChatExchangeSession, RoomProxy, format_message
@@ -22,16 +25,35 @@ ALLPING = re.compile(ur'all (\w+) mods(?::\s*(.+))?$')
 class Dispatcher(object):
     NO_INFO = u'No moderator info for site {}.stackexchange.com.'
 
-    def __init__(self, room):
-        self._room = room
+    def __init__(self, send, room_info):
+        '''Constructs a message dispatcher.
 
-    def dispatch(self, message):
-        logger.debug(u'Dispatching message: {}'.format(message))
+        ``send`` should be a callable that takes one required argument, a string
+        (`str` or `unicode`), and one optional argument, a
+        `chatexchange.messages.Message` object to reply to.
+
+        ``room_info`` should be an object that can provide information about
+        present and pingable user IDs, such as a
+        `pingbot.stackexchange_chat.RoomProxy` object.
+
+        The dispatcher can be connected to a `chatexchange.rooms.Room` by
+        calling e.g. `room.watch(dispatcher.on_event)`.'''
+        self._send = send
+        self._room = room_info
+
+    def on_event(self, event, client):
+        logger.debug(u'Received event: {}'.format(repr(event)))
+        if not isinstance(event, MessagePosted):
+            return
+        self.dispatch(event.content, event.message)
+
+    def dispatch(self, content, message):
+        logger.debug(u'Dispatching message: {}'.format(content))
         try:
             def reply(m):
-                self._room.send(m, reply_target=message)
+                self._send(m, message)
             try:
-                content = message.content.strip()
+                content = content.strip()
                 if content == u'help me ping':
                     reply(HELP)
                     return
@@ -135,8 +157,10 @@ def listen_to_room(email, password, room_id, host='stackexchange.com', leave_roo
     try:
         with ChatExchangeSession(email, password, host) as ce:
             with RoomProxy(ce, room_id, leave_room_on_close) as room:
-                dispatcher = Dispatcher(room)
-                for message in room:
-                    dispatcher.dispatch(message)
+                dp = Dispatcher(room.send, room)
+                room.watch(dp.on_event)
+                while True:
+                    # wait for an interruption
+                    time.sleep(1)
     except KeyboardInterrupt:
         logger.info(u'Terminating due to KeyboardInterrupt')

@@ -38,6 +38,12 @@ class RoomProxy(object):
         logger.info(u'Joined room {}'.format(room_id))
         self.send(u'Ping bot is now active')
 
+    def watch(self, event_callback):
+        self._room.watch(event_callback)
+
+    def watch_polling(self, event_callback, interval):
+        self._room.watch_polling(event_callback, interval)
+
     def send(self, message, reply_target=None):
         message = format_message(message)
         if reply_target:
