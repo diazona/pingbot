@@ -155,19 +155,20 @@ class Dispatcher(object):
             return u'Pinging {} moderators: {}'.format(len(site_mod_info), mod_pings)
 
 def _listen_to_room(room):
-    dp = Dispatcher(room.send, room)
-    room.watch(dp.on_event)
-    while room.active:
-        # wait for an interruption
-        time.sleep(1)
-
-def listen_to_chat_room(email, password, room_id, host='stackexchange.com', leave_room_on_close=True):
     try:
-        with ChatExchangeSession(email, password, host) as ce:
-            with SERoomProxy(ce, room_id, leave_room_on_close) as room:
-                _listen_to_room(room)
+        dp = Dispatcher(room.send, room)
+        room.watch(dp.on_event)
+        while room.active:
+            # wait for an interruption
+            time.sleep(1)
     except KeyboardInterrupt:
         logger.info(u'Terminating due to KeyboardInterrupt')
+
+
+def listen_to_chat_room(email, password, room_id, host='stackexchange.com', leave_room_on_close=True):
+    with ChatExchangeSession(email, password, host) as ce:
+        with SERoomProxy(ce, room_id, leave_room_on_close) as room:
+            _listen_to_room(room)
 
 def listen_to_terminal_room(leave_room_on_close=True):
     with TerminalRoomProxy(leave_room_on_close) as room:

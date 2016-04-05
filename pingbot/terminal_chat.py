@@ -41,11 +41,12 @@ class RoomProxy(object):
     def __init__(self, leave_room_on_close=True, silent=False):
         self.leave_room_on_close = leave_room_on_close
         self.silent = silent
+        self.active = True
+        self._callbacks = []
         logger.info(u'Joined fake terminal room')
         self.send(u'Ping bot is now active')
         self._input_thread = threading.Thread(target=self._read)
         self._input_thread.daemon = True
-        self._callbacks = []
 
     def _read(self):
         for line_id, line in enumerate(iter(sys.stdin.readline, b'')):
@@ -56,13 +57,15 @@ class RoomProxy(object):
                 # In case room is closed from another thread
                 break
         # In case we run out of input before being closed
-        self._callbacks = []
+        self.active = False
 
     def _invoke_callbacks(self, event):
         for c in self._callbacks:
             c(event, None)
 
     def watch(self, event_callback):
+        if not self.active:
+            return
         self._callbacks.append(event_callback)
         if not self._input_thread.is_alive():
             logger.debug(u'Starting reading thread')
@@ -72,9 +75,6 @@ class RoomProxy(object):
         self.watch(event_callback)
 
     def send(self, message, reply_target=None):
-        if not self.active:
-            logger.debug(u'Not sending message to inactive room')
-            return
         if self.silent:
             logger.debug(u'Not sending message due to silent mode')
             return
@@ -86,19 +86,14 @@ class RoomProxy(object):
             logger.debug(u'Sending message: {}'.format(repr(message)))
             print message
 
-    @property
-    def active(self):
-        return len(self._callbacks) > 0
-
     def close(self):
-        if not self.active:
-            return
+        self.active = False
         self._callbacks = []
-        logger.debug(u'Closing RoomProxy')
         try:
             self.send(u'Ping bot is leaving')
         except:
             logger.exception(u'Error leaving fake terminal room')
+        logger.debug(u'Closing RoomProxy')
         if self.leave_room_on_close:
             logger.info(u'Leaving fake terminal room')
         else:
@@ -111,7 +106,8 @@ class RoomProxy(object):
         self.close()
 
     def __iter__(self):
-        return iter(self._room.new_messages())
+        if self.active:
+            return iter(self._room.new_messages())
 
     def get_ping_string(self, user_id, quote=False):
         return self.get_ping_strings([user_id], quote)[0]

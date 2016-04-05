@@ -47,9 +47,6 @@ class RoomProxy(object):
         self._room.watch_polling(event_callback, interval)
 
     def send(self, message, reply_target=None):
-        if not self.active:
-            logger.debug(u'Not sending message to inactive room')
-            return
         if self.silent:
             logger.debug(u'Not sending message due to silent mode')
             return
@@ -62,8 +59,6 @@ class RoomProxy(object):
             self._room.send_message(message)
 
     def close(self):
-        if not self.active:
-            return
         self.active = False
         logger.debug(u'Closing RoomProxy')
         try:
