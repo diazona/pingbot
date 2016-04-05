@@ -13,9 +13,6 @@ logger = logging.getLogger('pingbot.terminal_chat')
 def format_message(message):
     return (u'[auto]\n{}' if u'\n' in message else u'[auto] {}').format(message)
 
-PING_FORMAT = u'@{}'
-SUPERPING_FORMAT = u'@@{}'
-
 def code_quote(s):
     return u'`{}`'.format(s.replace(u'`', u''))
 
@@ -39,9 +36,11 @@ class RoomProxy(object):
     stdout. It also includes dummy implementations of the methods that check for
     current or pingable users, but it doesn't have a concept of room membership;
     instead it acts as if nobody is ever in the chat room.'''
-    def __init__(self, leave_room_on_close=True, silent=False):
+    def __init__(self, leave_room_on_close=True, silent=False, ping_format=u'@{}', superping_format=u'@@{}'):
         self.leave_room_on_close = leave_room_on_close
         self.silent = silent
+        self.ping_format = ping_format
+        self.superping_format = superping_format
         self.active = True
         self._callbacks = []
         logger.info(u'Joined fake terminal room')
@@ -114,7 +113,7 @@ class RoomProxy(object):
         return self.get_ping_strings([user_id], quote)[0]
 
     def get_ping_strings(self, user_ids, quote=False):
-        superping_format = code_quote(SUPERPING_FORMAT) if quote else SUPERPING_FORMAT
+        superping_format = code_quote(self.superping_format) if quote else self.superping_format
         return [superping_format.format(i) for i in user_ids]
 
     def get_current_user_ids(self, user_ids=None):

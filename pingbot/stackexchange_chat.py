@@ -22,18 +22,17 @@ class ChatExchangeSession(object):
     def listen(self, room_id):
         return RoomListener(self, room_id)
 
-PING_FORMAT = u'@{}'
-SUPERPING_FORMAT = u'@@{}'
-
 def code_quote(s):
     return u'`{}`'.format(s.replace(u'`', u''))
 
 class RoomProxy(object):
-    def __init__(self, chatexchange_session, room_id, leave_room_on_close=True, silent=False):
+    def __init__(self, chatexchange_session, room_id, leave_room_on_close=True, silent=False, ping_format=u'@{}', superping_format=u'@@{}'):
         self.session = chatexchange_session
         self.room_id = room_id
         self.leave_room_on_close = leave_room_on_close
         self.silent = silent
+        self.ping_format = ping_format
+        self.superping_format = superping_format
         self._room = self.session.client.get_room(self.room_id)
         self._room.join()
         self.active = True
@@ -90,8 +89,8 @@ class RoomProxy(object):
         return self.get_ping_strings([user_id], quote)[0]
 
     def get_ping_strings(self, user_ids, quote=False):
-        ping_format = code_quote(PING_FORMAT) if quote else PING_FORMAT
-        superping_format = code_quote(SUPERPING_FORMAT) if quote else SUPERPING_FORMAT
+        ping_format = code_quote(self.ping_format) if quote else self.ping_format
+        superping_format = code_quote(self.superping_format) if quote else self.superping_format
         pingable_users = dict(zip(self._room.get_pingable_user_ids(), self._room.get_pingable_user_names()))
         return [(ping_format.format(pingable_users[i].replace(u' ', u'')) if i in pingable_users else superping_format.format(i)) for i in user_ids]
 

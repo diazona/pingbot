@@ -34,14 +34,28 @@ def main():
     cfg = ConfigParser.RawConfigParser()
     cfg.read(cfg_filename)
 
+    listen_kwargs = {}
+
     try:
         room_id = cfg.get(u'room', u'id')
     except ConfigParser.NoOptionError:
         room_id = 'terminal'
+    else:
+        if room_id in ('0', 'terminal'):
+            room_id = 'terminal'
     try:
-        leave_room_on_close = cfg.getboolean(u'user', u'leave_on_close')
+        listen_kwargs['leave_room_on_close'] = cfg.getboolean(u'user', u'leave_on_close')
     except ConfigParser.NoOptionError:
-        leave_room_on_close = True
+        listen_kwargs['leave_room_on_close'] = True
+
+    try:
+        listen_kwargs['ping_format'] = cfg.get(u'room_{}'.format(room_id), u'ping_format')
+    except ConfigParser.NoOptionError:
+        pass
+    try:
+        listen_kwargs['superping_format'] = cfg.get(u'room_{}'.format(room_id), u'superping_format')
+    except ConfigParser.NoOptionError:
+        pass
 
     import pingbot
 
@@ -50,8 +64,8 @@ def main():
     except ConfigParser.NoOptionError:
         pingbot.update_moderators()
 
-    if room_id in ('0', 'terminal'):
-        pingbot.listen_to_terminal_room(leave_room_on_close=leave_room_on_close)
+    if room_id == 'terminal':
+        pingbot.listen_to_terminal_room(**listen_kwargs)
     else:
         try:
             email = cfg.get(u'user', u'email')
@@ -62,7 +76,7 @@ def main():
         except ConfigParser.NoOptionError:
             getpass.getpass('Password: ')
 
-        pingbot.listen_to_chat_room(email, password, room_id, leave_room_on_close=leave_room_on_close)
+        pingbot.listen_to_chat_room(email, password, room_id, **listen_kwargs)
 
 if __name__ == '__main__':
     main()

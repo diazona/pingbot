@@ -168,11 +168,11 @@ def _listen_to_room(room):
         logger.info(u'Terminating due to KeyboardInterrupt')
 
 
-def listen_to_chat_room(email, password, room_id, host='stackexchange.com', leave_room_on_close=True):
+def listen_to_chat_room(email, password, room_id, host='stackexchange.com', **kwargs):
     with ChatExchangeSession(email, password, host) as ce:
-        with SERoomProxy(ce, room_id, leave_room_on_close) as room:
+        with SERoomProxy(ce, room_id, **kwargs) as room:
             _listen_to_room(room)
 
-def listen_to_terminal_room(leave_room_on_close=True):
-    with TerminalRoomProxy(leave_room_on_close) as room:
+def listen_to_terminal_room(**kwargs):
+    with TerminalRoomProxy(**kwargs) as room:
         _listen_to_room(room)
