@@ -137,11 +137,14 @@ class Dispatcher(object):
         site_mod_ids = set(m['id'] for m in site_mod_info)
         current_mod_ids = set(self._room.get_current_user_ids())
         current_site_mod_ids = site_mod_ids & current_mod_ids
-        mod_pings = u' '.join(self._room.get_ping_strings(current_site_mod_ids))
-        if message:
-            return u'{}: {}'.format(mod_pings, message)
+        if current_site_mod_ids:
+            mod_pings = u' '.join(self._room.get_ping_strings(current_site_mod_ids))
+            if message:
+                return u'{}: {}'.format(mod_pings, message)
+            else:
+                return u'Pinging {} moderator{}: {}'.format(len(current_site_mod_ids), u's' if len(current_site_mod_ids) != 1 else u'', mod_pings)
         else:
-            return u'Pinging {} moderator{}: {}'.format(len(current_site_mod_ids), u's' if len(current_site_mod_ids) != 1 else u'', mod_pings)
+            return u'No moderators of {0}.stackexchange.com are currently in this room. Use `{0} mod` to ping one.'.format(sitename)
 
     def ping_all(self, sitename, message=None):
         '''Sends a ping to all mods from the chosen site.'''
