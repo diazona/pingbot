@@ -23,6 +23,7 @@ class TerminalMessage(object):
     def __init__(self, message_id, content):
         self.id = message_id
         self.content = content
+        self.content_source = content
 
 # Analogous to chatexchange.event.MessagePosted
 class TerminalReadEvent(object):

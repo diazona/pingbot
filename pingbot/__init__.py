@@ -64,14 +64,17 @@ class Dispatcher(object):
                     return
                 m = ANYPING.match(content)
                 if m:
+                    m = ANYPING.match(message.content_source)
                     reply(self.ping_one(m.group(1), m.group(2)))
                     return
                 m = HEREPING.match(content)
                 if m:
+                    m = HEREPING.match(message.content_source)
                     reply(self.ping_present(m.group(1), m.group(2)))
                     return
                 m = ALLPING.match(content)
                 if m:
+                    m = ALLPING.match(message.content_source)
                     reply(self.ping_all(m.group(1), m.group(2)))
                     return
             except:
