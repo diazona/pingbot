@@ -121,7 +121,15 @@ class Dispatcher(object):
         current_mod_ids = set(self._room.get_current_user_ids())
         current_site_mod_ids = site_mod_ids & current_mod_ids
 
-        mod_ping = self._room.get_ping_string(random.choice(list(current_site_mod_ids or site_mod_ids)))
+        if current_site_mod_ids:
+            mod_ping = self._room.get_ping_string(random.choice(list(current_site_mod_ids)))
+        else:
+            pingable_mod_ids = set(self._room.get_pingable_user_ids())
+            pingable_site_mod_ids = site_mod_ids & pingable_mod_ids
+            if pingable_site_mod_ids:
+                mod_ping = self._room.get_ping_string(random.choice(list(pingable_site_mod_ids)))
+            else:
+                mod_ping = self._room.get_ping_string(random.choice(list(site_mod_ids)))
         if message:
             return u'{}: {}'.format(mod_ping, message)
         else:
