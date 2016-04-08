@@ -65,6 +65,18 @@ def main():
         pingbot.update_moderators()
 
     if room_id == 'terminal':
+        try:
+            listen_kwargs['current_user_ids'] = set(int(s.strip()) for s in cfg.get(u'room_terminal', u'current_user_ids').split(','))
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            listen_kwargs['pingable_user_ids'] = set(int(s.strip()) for s in cfg.get(u'room_terminal', u'pingable_user_ids').split(','))
+        except ConfigParser.NoOptionError:
+            pass
+        try:
+            listen_kwargs['user_id'] = cfg.getint(u'room_terminal', u'user_id')
+        except ConfigParser.NoOptionError:
+            pass
         pingbot.listen_to_terminal_room(**listen_kwargs)
     else:
         try:
