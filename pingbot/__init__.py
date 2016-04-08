@@ -53,6 +53,7 @@ class Dispatcher(object):
         try:
             def reply(m):
                 self._send(m, message)
+            poster_id = message.owner.id
             try:
                 content = content.strip()
                 if content == u'help me ping':
@@ -60,22 +61,22 @@ class Dispatcher(object):
                     return
                 m = WHOIS.match(content)
                 if m:
-                    reply(self.whois(m.group(1)))
+                    reply(self.whois(m.group(1), poster_id))
                     return
                 m = ANYPING.match(content)
                 if m:
                     m = ANYPING.match(message.content_source)
-                    reply(self.ping_one(m.group(1), m.group(2)))
+                    reply(self.ping_one(m.group(1), poster_id, m.group(2)))
                     return
                 m = HEREPING.match(content)
                 if m:
                     m = HEREPING.match(message.content_source)
-                    reply(self.ping_present(m.group(1), m.group(2)))
+                    reply(self.ping_present(m.group(1), poster_id, m.group(2)))
                     return
                 m = ALLPING.match(content)
                 if m:
                     m = ALLPING.match(message.content_source)
-                    reply(self.ping_all(m.group(1), m.group(2)))
+                    reply(self.ping_all(m.group(1), poster_id, m.group(2)))
                     return
             except:
                 logger.exception(u'Error dispatching message')
@@ -84,7 +85,7 @@ class Dispatcher(object):
             logger.exception(u'Error sending reply')
             self._room.send(u'Something went _really_ wrong, sorry!')
 
-    def whois(self, sitename):
+    def whois(self, sitename, poster_id):
         '''Gives a list of mods of the given site.'''
         try:
             site_mod_info = moderators[sitename]
@@ -92,11 +93,19 @@ class Dispatcher(object):
             return self.NO_INFO.format(sitename)
 
         site_mod_info.sort(key=lambda m: m['name'].lower())
-        current_site_mod_ids = set(m['id'] for m in site_mod_info) & set(self._room.get_current_user_ids())
+        site_mod_ids = set(m['id'] for m in site_mod_info)
+        if poster_id in site_mod_ids:
+            # don't remove from the original list in the moderators dict
+            site_mod_info = [m for m in site_mod_info if m['id'] != poster_id]
+            site_mod_ids.remove(poster_id)
+            count_format = '{} other'.format(len(site_mod_info))
+        else:
+            count_format = '{}'.format(len(site_mod_info))
 
+        current_site_mod_ids = site_mod_ids & set(self._room.get_current_user_ids())
         if current_site_mod_ids:
             return u'I know of {} moderators on {}.stackexchange.com. Currently in this room: {}. Not currently in this room: {} (ping with {}).'.format(
-                len(site_mod_info),
+                count_format,
                 sitename,
                 u', '.join(m['name'] for m in site_mod_info if m['id'] in current_site_mod_ids),
                 u', '.join(m['name'] for m in site_mod_info if m['id'] not in current_site_mod_ids),
@@ -104,13 +113,13 @@ class Dispatcher(object):
             )
         else:
             return u'I know of {} moderators on {}.stackexchange.com: {}. None are currently in this room. Ping with {}.'.format(
-                len(site_mod_info),
+                count_format,
                 sitename,
                 u', '.join(m['name'] for m in site_mod_info),
                 u' '.join(self._room.get_ping_strings([m['id'] for m in site_mod_info], quote=True))
             )
 
-    def ping_one(self, sitename, message=None):
+    def ping_one(self, sitename, poster_id, message=None):
         '''Sends a ping to one mod from the chosen site.'''
         try:
             site_mod_info = moderators[sitename]
@@ -118,6 +127,9 @@ class Dispatcher(object):
             return self.NO_INFO.format(sitename)
 
         site_mod_ids = set(m['id'] for m in site_mod_info)
+        if poster_id in site_mod_ids:
+            site_mod_ids.remove(poster_id)
+
         current_mod_ids = set(self._room.get_current_user_ids())
         current_site_mod_ids = site_mod_ids & current_mod_ids
 
@@ -135,7 +147,7 @@ class Dispatcher(object):
         else:
             return u'Pinging one moderator: {}'.format(mod_ping)
 
-    def ping_present(self, sitename, message=None):
+    def ping_present(self, sitename, poster_id, message=None):
         '''Sends a ping to all currently present mods from the chosen site.'''
         try:
             site_mod_info = moderators[sitename]
@@ -143,8 +155,13 @@ class Dispatcher(object):
             return self.NO_INFO.format(sitename)
 
         site_mod_ids = set(m['id'] for m in site_mod_info)
+        excluding_current = poster_id in site_mod_ids
+        if excluding_current:
+            site_mod_ids.remove(poster_id)
+
         current_mod_ids = set(self._room.get_current_user_ids())
         current_site_mod_ids = site_mod_ids & current_mod_ids
+
         if current_site_mod_ids:
             mod_pings = u' '.join(self._room.get_ping_strings(current_site_mod_ids))
             if message:
@@ -152,17 +169,17 @@ class Dispatcher(object):
             else:
                 return u'Pinging {} moderator{}: {}'.format(len(current_site_mod_ids), u's' if len(current_site_mod_ids) != 1 else u'', mod_pings)
         else:
-            return u'No moderators of {0}.stackexchange.com are currently in this room. Use `{0} mod` to ping one.'.format(sitename)
+            return (u'No other' if excluding_current else u'No') + u' moderators of {0}.stackexchange.com are currently in this room. Use `{0} mod` to ping one.'.format(sitename)
 
-    def ping_all(self, sitename, message=None):
+    def ping_all(self, sitename, poster_id, message=None):
         '''Sends a ping to all mods from the chosen site.'''
         try:
             site_mod_info = moderators[sitename]
         except KeyError:
             return self.NO_INFO.format(sitename)
 
-        site_mod_info.sort(key=lambda m: m['name'])
-        mod_pings = u' '.join(self._room.get_ping_strings(m['id'] for m in site_mod_info))
+        site_mod_info.sort(key=lambda m: m['name'].lower())
+        mod_pings = u' '.join(self._room.get_ping_strings(m['id'] for m in site_mod_info if m['id'] != poster_id))
         if message:
             return u'{}: {}'.format(mod_pings, message)
         else:
