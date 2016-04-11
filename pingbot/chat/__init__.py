@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 
-def _intersection(collection, pool):
+def intersection(collection, pool):
     pool = set(pool)
     if isinstance(collection, frozenset):
         return frozenset(collection & pool)
@@ -49,9 +49,9 @@ class RoomObserver(object):
         pingable = self.pingable_user_ids
         absent = set(user_ids) - present - pingable
         return (
-            _intersection(user_ids, present),
-            _intersection(user_ids, pingable),
-            _intersection(user_ids, absent)
+            intersection(user_ids, present),
+            intersection(user_ids, pingable),
+            intersection(user_ids, absent)
             )
 
     @abstractproperty

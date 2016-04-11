@@ -57,6 +57,22 @@ def main():
     except ConfigParser.NoOptionError:
         pass
 
+    try:
+        listen_kwargs['watch_tl'] = cfg.getboolean(u'room', u'watch_tl')
+    except ConfigParser.NoOptionError:
+        pass
+
+    if listen_kwargs['watch_tl'] or room_id != 'terminal':
+        try:
+            listen_kwargs['email'] = cfg.get(u'user', u'email')
+        except ConfigParser.NoOptionError:
+            listen_kwargs['email'] = raw_input('Email: ')
+        try:
+            listen_kwargs['password'] = cfg.get(u'user', u'password')
+        except ConfigParser.NoOptionError:
+            import getpass
+            listen_kwargs['password'] = getpass.getpass('Password: ')
+
     import pingbot
 
     try:
@@ -79,16 +95,7 @@ def main():
             pass
         pingbot.listen_to_terminal_room(**listen_kwargs)
     else:
-        try:
-            email = cfg.get(u'user', u'email')
-        except ConfigParser.NoOptionError:
-            email = raw_input('Email: ')
-        try:
-            password = cfg.get(u'user', u'password')
-        except ConfigParser.NoOptionError:
-            getpass.getpass('Password: ')
-
-        pingbot.listen_to_chat_room(email, password, room_id, **listen_kwargs)
+        pingbot.listen_to_chat_room(**listen_kwargs)
 
 if __name__ == '__main__':
     main()

@@ -25,14 +25,18 @@ ALLPING = re.compile(ur'all (\w+) mods(?::\s*(.+))?$')
 class Dispatcher(object):
     NO_INFO = u'No moderator info for site {}.stackexchange.com.'
 
-    def __init__(self, room):
+    def __init__(self, room, tl=None):
         '''Constructs a message dispatcher.
 
-        ``room_info`` should be an object that can provide information about
+        ``room`` should be an object that can provide information about
         present and pingable user IDs as well as send messages. It should implement
         the interfaces of `pingbot.chat.RoomObserver` and
-        `pingbot.chat.RoomParticipant`.'''
+        `pingbot.chat.RoomParticipant`.
+
+        ``tl`` should be a `RoomObserver` that can provide information about the
+        Teachers' Lounge, if desired.'''
         self._room = room
+        self._tl = tl
 
     def on_event(self, event, client):
         logger.debug(u'Received event: {}'.format(repr(event)))
@@ -95,20 +99,47 @@ class Dispatcher(object):
             count_format = '{}'.format(len(site_mod_info))
 
         present, pingable, absent = self._room.classify_user_ids(site_mod_ids)
+
+        if self._tl:
+            tl_present, tl_pingable, tl_absent = self._tl.classify_user_ids(site_mod_ids)
+            recent = (pingable | tl_present | tl_pingable) - present
+            others = (absent | tl_absent) - recent - present
+        else:
+            recent = pingable - present
+            others = absent - recent - present
+
         if present:
-            return u'I know of {} moderators on {}.stackexchange.com. Currently in this room: {}. Not currently in this room: {} (ping with {}).'.format(
-                count_format,
-                sitename,
-                u', '.join(m['name'] for m in site_mod_info if m['id'] in present),
-                u', '.join(m['name'] for m in site_mod_info if m['id'] not in present),
-                u' '.join(self._room.ping_strings([m['id'] for m in site_mod_info if m['id'] not in present], quote=True))
+            present_string = u'Currently in this room: {}.'.format(
+                u', '.join(m['name'] for m in site_mod_info if m['id'] in present)
             )
         else:
-            return u'I know of {} moderators on {}.stackexchange.com: {}. None are currently in this room. Ping with {}.'.format(
+            present_string = u'None are currently in this room.'
+
+        if recent:
+            recent_string = u'Recently active: {}.'.format(
+                u', '.join(m['name'] for m in site_mod_info if m['id'] in recent)
+            )
+        else:
+            recent_string = u'None are recently active.'
+
+        absent_mod_list = u', '.join(u'{} ({})'.format(m['name'], self._room.ping_string(m['id'], quote=True)) for m in site_mod_info if m['id'] in others)
+
+        if present or recent:
+            info_string = u'I know of {} moderators on {}.stackexchange.com.'.format(count_format, sitename)
+            if present and recent:
+                absent_mod_leadin = u'Others:'
+                return ' '.join([info_string, present_string, recent_string, absent_mod_leadin, absent_mod_list, u'.'])
+            elif present:
+                absent_mod_leadin = u'Not currently in this room:'
+                return ' '.join([info_string, present_string, absent_mod_leadin, absent_mod_list, u'.'])
+            elif recent:
+                absent_mod_leadin = u'Not recently active:'
+                return ' '.join([info_string, recent_string, absent_mod_leadin, absent_mod_list, u'.'])
+        else:
+            return u'I know of {} moderators on {}.stackexchange.com: {}. None are recently active.'.format(
                 count_format,
                 sitename,
-                u', '.join(m['name'] for m in site_mod_info),
-                u' '.join(self._room.ping_strings([m['id'] for m in site_mod_info], quote=True))
+                absent_mod_list
             )
 
     def ping_one(self, sitename, poster_id, message=None):
@@ -121,11 +152,21 @@ class Dispatcher(object):
         site_mod_ids = set(m['id'] for m in site_mod_info if m['id'] != poster_id)
 
         present, pingable, absent = self._room.classify_user_ids(site_mod_ids)
+        if self._tl:
+            tl_present, tl_pingable, tl_absent = self._tl.classify_user_ids(site_mod_ids)
+            mod_ping_set = present or tl_present or pingable or tl_pingable or absent
+        else:
+            mod_ping_set = present or pingable or absent
 
         now = time.time()
 
         def activity_metric(user_id):
-            inactive_time = (now - self._room.user_last_activity(user_id)) / 60.
+            last_activity = self._room.user_last_activity(user_id)
+            if self._tl:
+                tl_last_activity = self._tl.user_last_activity(user_id)
+                if tl_last_activity > last_activity:
+                    last_activity = tl_last_activity
+            inactive_time = (now - last_activity) / 60.
             # Optimize for users active around 5 minutes ago, using
             # (now - t) + (5 min)^2 / (now - t)
             # Use sqrt and round to avoid the effect of small differences in timing
@@ -137,7 +178,7 @@ class Dispatcher(object):
             shuffle_key = random.random()
             return (score, shuffle_key)
 
-        mod_ping = self._room.ping_string(min(present or pingable or absent, key=activity_metric))
+        mod_ping = self._room.ping_string(min(mod_ping_set, key=activity_metric))
         if message:
             return u'{}: {}'.format(mod_ping, message)
         else:
@@ -180,9 +221,9 @@ class Dispatcher(object):
         else:
             return u'Pinging {} moderators: {}'.format(len(site_mod_info), mod_pings)
 
-def _listen_to_room(room):
+def _listen_to_room(room, tl=None):
     try:
-        dp = Dispatcher(room)
+        dp = Dispatcher(room, tl)
         room.watch(dp.on_event)
         while room.observer_active:
             # wait for an interruption
@@ -190,14 +231,33 @@ def _listen_to_room(room):
     except KeyboardInterrupt:
         logger.info(u'Terminating due to KeyboardInterrupt')
 
+from pingbot.chat import intersection
 
-def listen_to_chat_room(email, password, room_id, host='stackexchange.com', **kwargs):
-    from pingbot.chat.stackexchange import ChatExchangeSession, RoomParticipant as SERoom
+def listen_to_chat_room(email, password, room_id, watch_tl=False, host='stackexchange.com', **kwargs):
+    from pingbot.chat.stackexchange import ChatExchangeSession, RoomObserver, RoomParticipant
     with ChatExchangeSession(email, password, host) as ce:
-        with SERoom(ce, room_id, **kwargs) as room:
-            _listen_to_room(room)
+        if watch_tl:
+            if host != 'stackexchange.com':
+                raise ValueError('Can\'t connect to Teachers\' Lounge on host {}'.format(host))
+            # Teachers' Lounge room ID is 4
+            with RoomObserver(ce, 4, **kwargs) as tl:
+                with RoomParticipant(ce, room_id, **kwargs) as room:
+                    _listen_to_room(room, tl)
+        else:
+            with RoomParticipant(ce, room_id, **kwargs) as room:
+                _listen_to_room(room)
 
-def listen_to_terminal_room(**kwargs):
+def listen_to_terminal_room(watch_tl=False, **kwargs):
+    from pingbot.chat.stackexchange import ChatExchangeSession, RoomObserver
     from pingbot.chat.terminal import Room as TerminalRoom
-    with TerminalRoom(**kwargs) as room:
-        _listen_to_room(room)
+    if watch_tl:
+        with ChatExchangeSession(kwargs['email'], kwargs['password'], 'stackexchange.com') as ce:
+            # Teachers' Lounge room ID is 4
+            se_kwargs = intersection(kwargs, ('chatexchange_session', 'room_id', 'leave_room_on_close', 'ping_format', 'superping_format'))
+            term_kwargs = intersection(kwargs, ('leave_room_on_close', 'ping_format', 'superping_format', 'present_user_ids', 'pingable_user_ids'))
+            with RoomObserver(ce, 4, **se_kwargs) as tl:
+                with TerminalRoom(**term_kwargs) as room:
+                    _listen_to_room(room, tl)
+    else:
+        with TerminalRoom(**kwargs) as room:
+            _listen_to_room(room)
