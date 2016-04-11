@@ -27,12 +27,14 @@ def code_quote(s):
 
 class RoomObserver(BaseRoomObserver):
     def __init__(self, chatexchange_session, room_id, leave_room_on_close=True, ping_format=u'@{}', superping_format=u'@@{}'):
+        self._observer_active = False
+        self._user_last_activity = {}
+        self._room = None
         self.session = chatexchange_session
         self.room_id = room_id
         self.leave_room_on_close = leave_room_on_close
         self.ping_format = unicode(ping_format)
         self.superping_format = unicode(superping_format)
-        self._user_last_activity = {}
         self._room = self.session.client.get_room(self.room_id)
         self._room.join()
         self.watch(self._user_status_callback)
@@ -86,7 +88,7 @@ class RoomObserver(BaseRoomObserver):
         return iter(self._room.new_events())
 
     def ping_string(self, user_id, quote=False):
-        return self.get_ping_strings([user_id], quote)[0]
+        return self.ping_strings([user_id], quote)[0]
 
     def ping_strings(self, user_ids, quote=False):
         ping_format = code_quote(self.ping_format) if quote else self.ping_format
