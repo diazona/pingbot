@@ -66,7 +66,7 @@ def main():
 
     if room_id == 'terminal':
         try:
-            listen_kwargs['current_user_ids'] = set(int(s.strip()) for s in cfg.get(u'room_terminal', u'current_user_ids').split(','))
+            listen_kwargs['present_user_ids'] = set(int(s.strip()) for s in cfg.get(u'room_terminal', u'present_user_ids').split(','))
         except ConfigParser.NoOptionError:
             pass
         try:

@@ -6,9 +6,7 @@ import time
 
 from ChatExchange.chatexchange.events import MessagePosted
 
-from .moderators import moderators, update as update_moderators
-from .stackexchange_chat import ChatExchangeSession, RoomProxy as SERoomProxy
-from .terminal_chat import RoomProxy as TerminalRoomProxy
+from pingbot.moderators import moderators, update as update_moderators
 
 logger = logging.getLogger('pingbot')
 
@@ -26,21 +24,14 @@ ALLPING = re.compile(ur'all (\w+) mods(?::\s*(.+))?$')
 class Dispatcher(object):
     NO_INFO = u'No moderator info for site {}.stackexchange.com.'
 
-    def __init__(self, send, room_info):
+    def __init__(self, room):
         '''Constructs a message dispatcher.
 
-        ``send`` should be a callable that takes one required argument, a string
-        (`str` or `unicode`), and one optional argument, a
-        `chatexchange.messages.Message` object to reply to.
-
         ``room_info`` should be an object that can provide information about
-        present and pingable user IDs, such as a
-        `pingbot.stackexchange_chat.RoomProxy` object.
-
-        The dispatcher can be connected to a `chatexchange.rooms.Room` by
-        calling e.g. `room.watch(dispatcher.on_event)`.'''
-        self._send = send
-        self._room = room_info
+        present and pingable user IDs as well as send messages. It should implement
+        the interfaces of `pingbot.chat.RoomObserver` and
+        `pingbot.chat.RoomParticipant`.'''
+        self._room = room
 
     def on_event(self, event, client):
         logger.debug(u'Received event: {}'.format(repr(event)))
@@ -52,7 +43,7 @@ class Dispatcher(object):
         logger.debug(u'Dispatching message: {}'.format(content))
         try:
             def reply(m):
-                self._send(m, message)
+                self._room.send(m, message)
             poster_id = message.owner.id
             try:
                 content = content.strip()
@@ -102,21 +93,21 @@ class Dispatcher(object):
         else:
             count_format = '{}'.format(len(site_mod_info))
 
-        current_site_mod_ids = site_mod_ids & set(self._room.get_current_user_ids())
-        if current_site_mod_ids:
+        present, pingable, absent = self._room.classify_user_ids(site_mod_ids)
+        if present:
             return u'I know of {} moderators on {}.stackexchange.com. Currently in this room: {}. Not currently in this room: {} (ping with {}).'.format(
                 count_format,
                 sitename,
-                u', '.join(m['name'] for m in site_mod_info if m['id'] in current_site_mod_ids),
-                u', '.join(m['name'] for m in site_mod_info if m['id'] not in current_site_mod_ids),
-                u' '.join(self._room.get_ping_strings([m['id'] for m in site_mod_info if m['id'] not in current_site_mod_ids], quote=True))
+                u', '.join(m['name'] for m in site_mod_info if m['id'] in present),
+                u', '.join(m['name'] for m in site_mod_info if m['id'] not in present),
+                u' '.join(self._room.ping_strings([m['id'] for m in site_mod_info if m['id'] not in present], quote=True))
             )
         else:
             return u'I know of {} moderators on {}.stackexchange.com: {}. None are currently in this room. Ping with {}.'.format(
                 count_format,
                 sitename,
                 u', '.join(m['name'] for m in site_mod_info),
-                u' '.join(self._room.get_ping_strings([m['id'] for m in site_mod_info], quote=True))
+                u' '.join(self._room.ping_strings([m['id'] for m in site_mod_info], quote=True))
             )
 
     def ping_one(self, sitename, poster_id, message=None):
@@ -126,22 +117,11 @@ class Dispatcher(object):
         except KeyError:
             return self.NO_INFO.format(sitename)
 
-        site_mod_ids = set(m['id'] for m in site_mod_info)
-        if poster_id in site_mod_ids:
-            site_mod_ids.remove(poster_id)
+        site_mod_ids = set(m['id'] for m in site_mod_info if m['id'] != poster_id)
 
-        current_mod_ids = set(self._room.get_current_user_ids())
-        current_site_mod_ids = site_mod_ids & current_mod_ids
+        present, pingable, absent = self._room.classify_user_ids(site_mod_ids)
 
-        if current_site_mod_ids:
-            mod_ping = self._room.get_ping_string(random.choice(list(current_site_mod_ids)))
-        else:
-            pingable_mod_ids = set(self._room.get_pingable_user_ids())
-            pingable_site_mod_ids = site_mod_ids & pingable_mod_ids
-            if pingable_site_mod_ids:
-                mod_ping = self._room.get_ping_string(random.choice(list(pingable_site_mod_ids)))
-            else:
-                mod_ping = self._room.get_ping_string(random.choice(list(site_mod_ids)))
+        mod_ping = self._room.ping_string(random.choice(list(present or pingable or absent)))
         if message:
             return u'{}: {}'.format(mod_ping, message)
         else:
@@ -159,15 +139,14 @@ class Dispatcher(object):
         if excluding_current:
             site_mod_ids.remove(poster_id)
 
-        current_mod_ids = set(self._room.get_current_user_ids())
-        current_site_mod_ids = site_mod_ids & current_mod_ids
+        present, pingable, absent = self._room.classify_user_ids(site_mod_ids)
 
-        if current_site_mod_ids:
-            mod_pings = u' '.join(self._room.get_ping_strings(current_site_mod_ids))
+        if present:
+            mod_pings = u' '.join(self._room.ping_strings(present))
             if message:
                 return u'{}: {}'.format(mod_pings, message)
             else:
-                return u'Pinging {} moderator{}: {}'.format(len(current_site_mod_ids), u's' if len(current_site_mod_ids) != 1 else u'', mod_pings)
+                return u'Pinging {} moderator{}: {}'.format(len(present), u's' if len(present) != 1 else u'', mod_pings)
         else:
             return (u'No other' if excluding_current else u'No') + u' moderators of {0}.stackexchange.com are currently in this room. Use `{0} mod` to ping one.'.format(sitename)
 
@@ -179,7 +158,7 @@ class Dispatcher(object):
             return self.NO_INFO.format(sitename)
 
         site_mod_info.sort(key=lambda m: m['name'].lower())
-        mod_pings = u' '.join(self._room.get_ping_strings(m['id'] for m in site_mod_info if m['id'] != poster_id))
+        mod_pings = u' '.join(self._room.ping_strings(m['id'] for m in site_mod_info if m['id'] != poster_id))
         if message:
             return u'{}: {}'.format(mod_pings, message)
         else:
@@ -187,9 +166,9 @@ class Dispatcher(object):
 
 def _listen_to_room(room):
     try:
-        dp = Dispatcher(room.send, room)
+        dp = Dispatcher(room)
         room.watch(dp.on_event)
-        while room.active:
+        while room.observer_active:
             # wait for an interruption
             time.sleep(1)
     except KeyboardInterrupt:
@@ -197,10 +176,12 @@ def _listen_to_room(room):
 
 
 def listen_to_chat_room(email, password, room_id, host='stackexchange.com', **kwargs):
+    from pingbot.chat.stackexchange import ChatExchangeSession, Room as SERoom
     with ChatExchangeSession(email, password, host) as ce:
-        with SERoomProxy(ce, room_id, **kwargs) as room:
+        with SERoom(ce, room_id, **kwargs) as room:
             _listen_to_room(room)
 
 def listen_to_terminal_room(**kwargs):
-    with TerminalRoomProxy(**kwargs) as room:
+    from pingbot.chat.terminal import Room as TerminalRoom
+    with TerminalRoom(**kwargs) as room:
         _listen_to_room(room)
