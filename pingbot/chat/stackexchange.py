@@ -21,8 +21,6 @@ class ChatExchangeSession(object):
         return self
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.client.logout()
-    def listen(self, room_id):
-        return RoomListener(self, room_id)
 
 def code_quote(s):
     return u'`{}`'.format(s.replace(u'`', u''))
