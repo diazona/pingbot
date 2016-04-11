@@ -34,10 +34,23 @@ class RoomObserver(BaseRoomObserver):
         self.leave_room_on_close = leave_room_on_close
         self.ping_format = unicode(ping_format)
         self.superping_format = unicode(superping_format)
+        self._user_last_activity = {}
         self._room = self.session.client.get_room(self.room_id)
         self._room.join()
+        self.watch(self._user_status_callback)
         self._observer_active = True
         logger.info(u'Joined room {}'.format(room_id))
+
+    def _user_status_callback(self, event, client):
+        if event.type_id in (
+            ce.events.UserEntered.type_id,
+            ce.events.UserLeft.type_id,
+            ce.events.MessagePosted.type_id
+        ):
+            self._user_last_activity[event.user.id] = event.time_stamp
+
+    def user_last_activity(self, user_id):
+        return self._user_last_activity.get(user_id, 0)
 
     def watch(self, event_callback):
         if self._observer_active:

@@ -58,6 +58,10 @@ class Room(BaseRoomObserver, BaseRoomParticipant):
         self.user_id = user_id
         self._present_user_ids = set(present_user_ids)
         self._pingable_user_ids = set(pingable_user_ids)
+        if self.user_id not in self._present_user_ids:
+            logger.warning('Current user ID not in present user IDs (may be valid for testing)')
+        if not (self._present_user_ids < self._pingable_user_ids):
+            logger.warning('Present user IDs not a subset of pingable user IDs (may be valid for testing)')
         self._callbacks = []
         self._input_thread = threading.Thread(target=self._read)
         self._input_thread.daemon = True
@@ -139,3 +143,6 @@ class Room(BaseRoomObserver, BaseRoomParticipant):
     @property
     def participant_active(self):
         return True
+
+    def user_last_activity(self, user_id):
+        return time.time() - float(user_id) / 100

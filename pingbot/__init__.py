@@ -1,5 +1,6 @@
 import io
 import logging
+import math
 import random
 import re
 import time
@@ -121,7 +122,22 @@ class Dispatcher(object):
 
         present, pingable, absent = self._room.classify_user_ids(site_mod_ids)
 
-        mod_ping = self._room.ping_string(random.choice(list(present or pingable or absent)))
+        now = time.time()
+
+        def activity_metric(user_id):
+            inactive_time = (now - self._room.user_last_activity(user_id)) / 60.
+            # Optimize for users active around 5 minutes ago, using
+            # (now - t) + (5 min)^2 / (now - t)
+            # Use sqrt and round to avoid the effect of small differences in timing
+            # a long time ago; for example, if two mods posted 5 minutes apart
+            # 3 days ago, that difference shouldn't be significant.
+            score = round(math.sqrt(inactive_time + 5. * 5. / inactive_time))
+            # The random number here breaks ties in a way that doesn't depend on
+            # any preexisting ordering of the ID list.
+            shuffle_key = random.random()
+            return (score, shuffle_key)
+
+        mod_ping = self._room.ping_string(min(present or pingable or absent, key=activity_metric))
         if message:
             return u'{}: {}'.format(mod_ping, message)
         else:
@@ -176,7 +192,7 @@ def _listen_to_room(room):
 
 
 def listen_to_chat_room(email, password, room_id, host='stackexchange.com', **kwargs):
-    from pingbot.chat.stackexchange import ChatExchangeSession, Room as SERoom
+    from pingbot.chat.stackexchange import ChatExchangeSession, RoomParticipant as SERoom
     with ChatExchangeSession(email, password, host) as ce:
         with SERoom(ce, room_id, **kwargs) as room:
             _listen_to_room(room)
