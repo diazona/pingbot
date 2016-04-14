@@ -95,6 +95,7 @@ def main():
             pass
         pingbot.listen_to_terminal_room(**listen_kwargs)
     else:
+        listen_kwargs['room_id'] = room_id
         pingbot.listen_to_chat_room(**listen_kwargs)
 
 if __name__ == '__main__':
