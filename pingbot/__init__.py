@@ -16,6 +16,7 @@ HELP = '''"whois [sitename] mods" works as in TL.
 "[sitename] mod" or "any [sitename] mod" pings a single mod of the site, one who is in the room if possible.
 "[sitename] mods" pings all mods of the site currently in the room, or if none are present, does nothing.
 "all [sitename] mods" pings all mods of the site, period.
+"sites" gives a list of pingable sites (not including some aliases which are also recognized).
 Pings can optionally be followed by a colon and a message.'''
 
 WHOIS = re.compile(ur'whois (\w+) mods$')
@@ -56,6 +57,9 @@ class Dispatcher(object):
                 if content == u'help me ping':
                     reply(HELP)
                     return
+                elif content == u'sites':
+                    reply(self.sites())
+                    return
                 m = WHOIS.match(content)
                 if m:
                     reply(self.whois(m.group(1), poster_id))
@@ -81,6 +85,10 @@ class Dispatcher(object):
         except:
             logger.exception(u'Error sending reply')
             self._room.send(u'Something went _really_ wrong, sorry!')
+
+    def sites(self):
+        '''Gives a list of sites.'''
+        return u'Known sites: ' + u', '.join(moderators.viewkeys())
 
     def whois(self, site_id, poster_id):
         '''Gives a list of mods of the given site.'''
