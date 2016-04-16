@@ -27,14 +27,17 @@ def initialize_logging(filename=None):
 
 def retry_on_connection_error(func, *args, **kwargs):
     '''Call func(*args, **kwargs) and retry if it raises a ConnectionError'''
+    import logging
+    logger = logging.getLogger('pingbot.retry')
     wait_index = 0
     while True:
         try:
             start = time.clock()
             # if it returns normally, break out of the loop
-            return func(*args, **kwargs)
+            r = func(*args, **kwargs)
         except requests.ConnectionError:
             elapsed = time.clock() - start
+            logging.info('Function ran for {} seconds'.format(elapsed))
             # A very simple heuristic: if elapsed time is more than five minutes,
             # assume the previous connection was stable for at least a while
             # and reset the waiting period (before the next attempt to reconnect)
@@ -47,7 +50,19 @@ def retry_on_connection_error(func, *args, **kwargs):
             # Now do the waiting. This is exponential backoff: the first time
             # after a reset, it waits 15 seconds, then 30 seconds, then 60 seconds,
             # then 120 seconds, etc.
-            time.sleep(15 * (2 ** wait_index))
+            wait_interval = 15 * (2 ** wait_index)
+            logger.exception('Connection broken; reconnecting in {} seconds'.format(wait_interval))
+            time.sleep(wait_interval)
+        except:
+            elapsed = time.clock() - start
+            logging.info('Function ran for {} seconds'.format(elapsed))
+            logger.exception('Error in function')
+            raise
+        else:
+            elapsed = time.clock() - start
+            logging.info('Function ran for {} seconds'.format(elapsed))
+            logger.debug('Function returned normally')
+            return r
 
 def main():
     try:
