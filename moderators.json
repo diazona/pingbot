@@ -52,7 +52,7 @@
         "id": 23745
       }
     ],
-    "tcs": [
+    "cstheory": [
       {
         "name": "Artem Kaznatcheev",
         "id": 865
@@ -170,7 +170,7 @@
         "id": 6123
       }
     ],
-    "mo": [
+    "mathoverflow": [
       {
         "name": "Ben Webster",
         "id": 56983
@@ -242,7 +242,7 @@
         "id": 9953
       }
     ],
-    "compsci": [
+    "scicomp": [
       {
         "name": "Geoff Oxberry",
         "id": 30456

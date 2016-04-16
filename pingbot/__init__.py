@@ -8,6 +8,7 @@ import time
 from ChatExchange.chatexchange.events import MessagePosted
 
 from pingbot.moderators import moderators, update as update_moderators
+from pingbot.sites import canonical_site_id, site_name as get_site_name
 
 logger = logging.getLogger('pingbot')
 
@@ -23,7 +24,7 @@ HEREPING = re.compile(ur'(\w+) mods(?::\s*(.+))?$')
 ALLPING = re.compile(ur'all (\w+) mods(?::\s*(.+))?$')
 
 class Dispatcher(object):
-    NO_INFO = u'No moderator info for site {}.stackexchange.com.'
+    NO_INFO = u'No moderator info for site {}.'
 
     def __init__(self, room, tl=None):
         '''Constructs a message dispatcher.
@@ -81,12 +82,14 @@ class Dispatcher(object):
             logger.exception(u'Error sending reply')
             self._room.send(u'Something went _really_ wrong, sorry!')
 
-    def whois(self, sitename, poster_id):
+    def whois(self, site_id, poster_id):
         '''Gives a list of mods of the given site.'''
         try:
-            site_mod_info = moderators[sitename]
+            site_id = canonical_site_id(site_id)
+            site_name = get_site_name(site_id)
+            site_mod_info = moderators[site_id]
         except KeyError:
-            return self.NO_INFO.format(sitename)
+            return self.NO_INFO.format(site_name)
 
         site_mod_info.sort(key=lambda m: m['name'].lower())
         site_mod_ids = set(m['id'] for m in site_mod_info)
@@ -125,7 +128,7 @@ class Dispatcher(object):
         absent_mod_list = u', '.join(u'{} ({})'.format(m['name'], self._room.ping_string(m['id'], quote=True)) for m in site_mod_info if m['id'] in others)
 
         if present or recent:
-            info_string = u'I know of {} moderators on {}.stackexchange.com.'.format(count_format, sitename)
+            info_string = u'I know of {} moderators on {}.'.format(count_format, site_name)
             if present and recent:
                 absent_mod_leadin = u'Others:'
                 return ' '.join([info_string, present_string, recent_string, absent_mod_leadin, absent_mod_list, u'.'])
@@ -136,18 +139,19 @@ class Dispatcher(object):
                 absent_mod_leadin = u'Not recently active:'
                 return ' '.join([info_string, recent_string, absent_mod_leadin, absent_mod_list, u'.'])
         else:
-            return u'I know of {} moderators on {}.stackexchange.com: {}. None are recently active.'.format(
+            return u'I know of {} moderators on {}: {}. None are recently active.'.format(
                 count_format,
-                sitename,
+                site_name,
                 absent_mod_list
             )
 
-    def ping_one(self, sitename, poster_id, message=None):
+    def ping_one(self, site_id, poster_id, message=None):
         '''Sends a ping to one mod from the chosen site.'''
         try:
-            site_mod_info = moderators[sitename]
+            site_id = canonical_site_id(site_id)
+            site_mod_info = moderators[site_id]
         except KeyError:
-            return self.NO_INFO.format(sitename)
+            return self.NO_INFO.format(site_name)
 
         site_mod_ids = set(m['id'] for m in site_mod_info if m['id'] != poster_id)
 
@@ -184,12 +188,14 @@ class Dispatcher(object):
         else:
             return u'Pinging one moderator: {}'.format(mod_ping)
 
-    def ping_present(self, sitename, poster_id, message=None):
+    def ping_present(self, site_id, poster_id, message=None):
         '''Sends a ping to all currently present mods from the chosen site.'''
         try:
-            site_mod_info = moderators[sitename]
+            site_id = canonical_site_id(site_id)
+            site_name = get_site_name(site_id)
+            site_mod_info = moderators[site_id]
         except KeyError:
-            return self.NO_INFO.format(sitename)
+            return self.NO_INFO.format(site_name)
 
         site_mod_ids = set(m['id'] for m in site_mod_info)
         excluding_current = poster_id in site_mod_ids
@@ -205,14 +211,15 @@ class Dispatcher(object):
             else:
                 return u'Pinging {} moderator{}: {}'.format(len(present), u's' if len(present) != 1 else u'', mod_pings)
         else:
-            return (u'No other' if excluding_current else u'No') + u' moderators of {0}.stackexchange.com are currently in this room. Use `{0} mod` to ping one.'.format(sitename)
+            return (u'No other' if excluding_current else u'No') + u' moderators of {} are currently in this room. Use `{} mod` to ping one.'.format(site_name, site_id)
 
-    def ping_all(self, sitename, poster_id, message=None):
+    def ping_all(self, site_id, poster_id, message=None):
         '''Sends a ping to all mods from the chosen site.'''
         try:
-            site_mod_info = moderators[sitename]
+            site_id = canonical_site_id(site_id)
+            site_mod_info = moderators[site_id]
         except KeyError:
-            return self.NO_INFO.format(sitename)
+            return self.NO_INFO.format(site_name)
 
         site_mod_info.sort(key=lambda m: m['name'].lower())
         mod_pings = u' '.join(self._room.ping_strings(m['id'] for m in site_mod_info if m['id'] != poster_id))
