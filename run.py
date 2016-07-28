@@ -2,7 +2,9 @@
 
 import ConfigParser
 import io
+import requests
 import sys
+import time
 
 def parse_config_file(filename):
     with io.open(filename, encoding='UTF-8') as f:
@@ -22,6 +24,45 @@ def initialize_logging(filename=None):
             logging.getLogger('pingbot').exception(u'Unable to open logging config file')
     else:
         logging.basicConfig(level=logging.WARNING)
+
+def retry_on_connection_error(func, *args, **kwargs):
+    '''Call func(*args, **kwargs) and retry if it raises a ConnectionError'''
+    import logging
+    logger = logging.getLogger('pingbot.retry')
+    wait_index = 0
+    while True:
+        try:
+            start = time.clock()
+            # if it returns normally, break out of the loop
+            r = func(*args, **kwargs)
+        except requests.ConnectionError:
+            elapsed = time.clock() - start
+            logging.info('Function ran for {} seconds'.format(elapsed))
+            # A very simple heuristic: if elapsed time is more than five minutes,
+            # assume the previous connection was stable for at least a while
+            # and reset the waiting period (before the next attempt to reconnect)
+            # back to its initial value
+            if elapsed > 300:
+                wait_index = 0
+            # Otherwise, move up to the next waiting period.
+            else:
+                wait_index += 1
+            # Now do the waiting. This is exponential backoff: the first time
+            # after a reset, it waits 15 seconds, then 30 seconds, then 60 seconds,
+            # then 120 seconds, etc.
+            wait_interval = 15 * (2 ** wait_index)
+            logger.exception('Connection broken; reconnecting in {} seconds'.format(wait_interval))
+            time.sleep(wait_interval)
+        except:
+            elapsed = time.clock() - start
+            logging.info('Function ran for {} seconds'.format(elapsed))
+            logger.exception('Error in function')
+            raise
+        else:
+            elapsed = time.clock() - start
+            logging.info('Function ran for {} seconds'.format(elapsed))
+            logger.debug('Function returned normally')
+            return r
 
 def main():
     try:
@@ -93,9 +134,14 @@ def main():
             listen_kwargs['user_id'] = cfg.getint(u'room_terminal', u'user_id')
         except ConfigParser.NoOptionError:
             pass
-        pingbot.listen_to_terminal_room(**listen_kwargs)
+        listen = pingbot.listen_to_terminal_room
+
     else:
-        pingbot.listen_to_chat_room(**listen_kwargs)
+        listen_kwargs['room_id'] = room_id
+        listen = pingbot.listen_to_chat_room
+
+    retry_on_connection_error(listen, **listen_kwargs)
+
 
 if __name__ == '__main__':
     main()
