@@ -20,9 +20,9 @@ HELP = '''"whois [sitename] mods" works as in TL.
 Pings can optionally be followed by a colon and a message.'''
 
 WHOIS = re.compile(ur'who(?:is|are) (\w+) mods$')
-ANYPING = re.compile(ur'(?:any )?(\w+) mod(?::\s*(.+))?$')
-HEREPING = re.compile(ur'(\w+) mods(?::\s*(.+))?$')
-ALLPING = re.compile(ur'all (\w+) mods(?::\s*(.+))?$')
+ANYPING = re.compile(ur'(?:any )?(\w+) mod(?:\s*:\s*(.+))?$')
+HEREPING = re.compile(ur'(\w+) mods(?:\s*:\s*(.+))?$')
+ALLPING = re.compile(ur'all (\w+) mods(?:\s*:\s*(.+))?$')
 
 class Dispatcher(object):
     NO_INFO = u'No moderator info for site {}.'
