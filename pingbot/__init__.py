@@ -19,7 +19,7 @@ HELP = '''"whois [sitename] mods" works as in TL.
 "sites" gives a list of pingable sites (not including some aliases which are also recognized).
 Pings can optionally be followed by a colon and a message.'''
 
-WHOIS = re.compile(ur'whois (\w+) mods$')
+WHOIS = re.compile(ur'who(?:is|are) (\w+) mods$')
 ANYPING = re.compile(ur'(?:any )?(\w+) mod(?::\s*(.+))?$')
 HEREPING = re.compile(ur'(\w+) mods(?::\s*(.+))?$')
 ALLPING = re.compile(ur'all (\w+) mods(?::\s*(.+))?$')
