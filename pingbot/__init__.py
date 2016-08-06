@@ -1,3 +1,4 @@
+import copy
 import io
 import logging
 import math
@@ -24,8 +25,22 @@ ANYPING = re.compile(ur'(?:any )?(\w+) mod(?:\s*:\s*(.+))?$')
 HEREPING = re.compile(ur'(\w+) mods(?:\s*:\s*(.+))?$')
 ALLPING = re.compile(ur'all (\w+) mods(?:\s*:\s*(.+))?$')
 
+class UnknownSiteException(Exception):
+    def __init__(self, site_id):
+        self.site_id = site_id
+
+class NoModeratorsException(Exception):
+    def __init__(self, site_id):
+        self.site_id = site_id
+
+class NoOtherModeratorsException(Exception):
+    def __init__(self, site_id, poster_id):
+        self.site_id = site_id
+        self.poster_id = poster_id
+
 class Dispatcher(object):
     NO_INFO = u'No moderator info for site {}.'
+    NO_OTHERS = u'No other moderators for site {}.'
 
     def __init__(self, room, tl=None):
         '''Constructs a message dispatcher.
@@ -39,6 +54,39 @@ class Dispatcher(object):
         Teachers' Lounge, if desired.'''
         self._room = room
         self._tl = tl
+
+    def get_moderators(self, site_id, poster_id=None):
+        '''Gets information about the moderators for the given site. If poster_id
+        is provided, information about any chat user with ID equal to poster_id
+        is removed from the returned data.
+
+        This returns a three-element tuple: first is a set of the IDs of the
+        moderators, second is a list of dicts with keys for name and id, one
+        dict for each moderator, and third is a boolean indicating whether a
+        moderator's info has been removed from the returned information.'''
+        site_id = canonical_site_id(site_id)
+        try:
+            site_mod_info = copy.copy(moderators[site_id])
+        except KeyError as e:
+            raise UnknownSiteException(site_id)
+        else:
+            if not site_mod_info:
+                raise NoModeratorsException(site_id)
+
+        site_mod_ids = set(m['id'] for m in site_mod_info)
+
+        excluding_poster = False
+        if poster_id is not None and poster_id in site_mod_ids:
+            site_mod_info = [m for m in site_mod_info if m['id'] != poster_id]
+            site_mod_ids.remove(poster_id)
+            excluding_poster = True
+            if not site_mod_ids:
+                raise NoOtherModeratorsException(site_id, poster_id)
+
+        assert site_mod_ids
+        site_mod_info.sort(key=lambda m: m['name'].lower())
+
+        return site_mod_ids, site_mod_info, excluding_poster
 
     def on_event(self, event, client):
         logger.debug(u'Received event: {}'.format(repr(event)))
@@ -93,18 +141,16 @@ class Dispatcher(object):
     def whois(self, site_id, poster_id):
         '''Gives a list of mods of the given site.'''
         try:
-            site_id = canonical_site_id(site_id)
-            site_name = get_site_name(site_id)
-            site_mod_info = moderators[site_id]
-        except KeyError:
+            site_mod_ids, site_mod_info, excluding_poster = self.get_moderators(
+                site_id, poster_id
+            )
+        except (UnknownSiteException, NoModeratorsException):
             return self.NO_INFO.format(site_name)
+        except NoOtherModeratorsException:
+            return self.NO_OTHERS.format(site_name)
+        site_name = get_site_name(site_id)
 
-        site_mod_info.sort(key=lambda m: m['name'].lower())
-        site_mod_ids = set(m['id'] for m in site_mod_info)
-        if poster_id in site_mod_ids:
-            # don't remove from the original list in the moderators dict
-            site_mod_info = [m for m in site_mod_info if m['id'] != poster_id]
-            site_mod_ids.remove(poster_id)
+        if excluding_poster:
             count_format = '{} other'.format(len(site_mod_info))
         else:
             count_format = '{}'.format(len(site_mod_info))
@@ -133,7 +179,10 @@ class Dispatcher(object):
         else:
             recent_string = u'None are recently active.'
 
-        absent_mod_list = u', '.join(u'{} ({})'.format(m['name'], self._room.ping_string(m['id'], quote=True)) for m in site_mod_info if m['id'] in others)
+        absent_mod_list = u', '.join(
+            u'{} ({})'.format(m['name'], self._room.ping_string(m['id'], quote=True))
+            for m in site_mod_info if m['id'] in others
+        )
 
         if present or recent:
             info_string = u'I know of {} moderators on {}.'.format(count_format, site_name)
@@ -156,12 +205,13 @@ class Dispatcher(object):
     def ping_one(self, site_id, poster_id, message=None):
         '''Sends a ping to one mod from the chosen site.'''
         try:
-            site_id = canonical_site_id(site_id)
-            site_mod_info = moderators[site_id]
-        except KeyError:
+            site_mod_ids, site_mod_info, excluding_poster = self.get_moderators(
+                site_id, poster_id
+            )
+        except (UnknownSiteException, NoModeratorsException):
             return self.NO_INFO.format(site_name)
-
-        site_mod_ids = set(m['id'] for m in site_mod_info if m['id'] != poster_id)
+        except NoOtherModeratorsException:
+            return self.NO_OTHERS.format(site_name)
 
         present, pingable, absent = self._room.classify_user_ids(site_mod_ids)
         if self._tl:
@@ -199,16 +249,15 @@ class Dispatcher(object):
     def ping_present(self, site_id, poster_id, message=None):
         '''Sends a ping to all currently present mods from the chosen site.'''
         try:
-            site_id = canonical_site_id(site_id)
-            site_name = get_site_name(site_id)
-            site_mod_info = moderators[site_id]
-        except KeyError:
+            site_mod_ids, site_mod_info, excluding_poster = self.get_moderators(
+                site_id, poster_id
+            )
+        except (UnknownSiteException, NoModeratorsException):
             return self.NO_INFO.format(site_name)
+        except NoOtherModeratorsException:
+            return self.NO_OTHERS.format(site_name)
 
-        site_mod_ids = set(m['id'] for m in site_mod_info)
-        excluding_current = poster_id in site_mod_ids
-        if excluding_current:
-            site_mod_ids.remove(poster_id)
+        site_name = get_site_name(site_id)
 
         present, pingable, absent = self._room.classify_user_ids(site_mod_ids)
 
@@ -219,18 +268,20 @@ class Dispatcher(object):
             else:
                 return u'Pinging {} moderator{}: {}'.format(len(present), u's' if len(present) != 1 else u'', mod_pings)
         else:
-            return (u'No other' if excluding_current else u'No') + u' moderators of {} are currently in this room. Use `{} mod` to ping one.'.format(site_name, site_id)
+            return (u'No other' if excluding_poster else u'No') + u' moderators of {} are currently in this room. Use `{} mod` to ping one.'.format(site_name, site_id)
 
     def ping_all(self, site_id, poster_id, message=None):
         '''Sends a ping to all mods from the chosen site.'''
         try:
-            site_id = canonical_site_id(site_id)
-            site_mod_info = moderators[site_id]
-        except KeyError:
+            site_mod_ids, site_mod_info, excluding_poster = self.get_moderators(
+                site_id, poster_id
+            )
+        except (UnknownSiteException, NoModeratorsException):
             return self.NO_INFO.format(site_name)
+        except NoOtherModeratorsException:
+            return self.NO_OTHERS.format(site_name)
 
-        site_mod_info.sort(key=lambda m: m['name'].lower())
-        mod_pings = u' '.join(self._room.ping_strings(m['id'] for m in site_mod_info if m['id'] != poster_id))
+        mod_pings = u' '.join(self._room.ping_strings(m['id'] for m in site_mod_info))
         if message:
             return u'{}: {}'.format(mod_pings, message)
         else:
