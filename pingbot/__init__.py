@@ -145,9 +145,9 @@ class Dispatcher(object):
                 site_id, poster_id
             )
         except (UnknownSiteException, NoModeratorsException):
-            return self.NO_INFO.format(site_name)
+            return self.NO_INFO.format(site_id)
         except NoOtherModeratorsException:
-            return self.NO_OTHERS.format(site_name)
+            return self.NO_OTHERS.format(site_id)
         site_name = get_site_name(site_id)
 
         if excluding_poster:
@@ -209,9 +209,9 @@ class Dispatcher(object):
                 site_id, poster_id
             )
         except (UnknownSiteException, NoModeratorsException):
-            return self.NO_INFO.format(site_name)
+            return self.NO_INFO.format(site_id)
         except NoOtherModeratorsException:
-            return self.NO_OTHERS.format(site_name)
+            return self.NO_OTHERS.format(site_id)
 
         present, pingable, absent = self._room.classify_user_ids(site_mod_ids)
         if self._tl:
@@ -253,9 +253,9 @@ class Dispatcher(object):
                 site_id, poster_id
             )
         except (UnknownSiteException, NoModeratorsException):
-            return self.NO_INFO.format(site_name)
+            return self.NO_INFO.format(site_id)
         except NoOtherModeratorsException:
-            return self.NO_OTHERS.format(site_name)
+            return self.NO_OTHERS.format(site_id)
 
         site_name = get_site_name(site_id)
 
@@ -277,9 +277,9 @@ class Dispatcher(object):
                 site_id, poster_id
             )
         except (UnknownSiteException, NoModeratorsException):
-            return self.NO_INFO.format(site_name)
+            return self.NO_INFO.format(site_id)
         except NoOtherModeratorsException:
-            return self.NO_OTHERS.format(site_name)
+            return self.NO_OTHERS.format(site_id)
 
         mod_pings = u' '.join(self._room.ping_strings(m['id'] for m in site_mod_info))
         if message:
