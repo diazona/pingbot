@@ -25,6 +25,8 @@ class ChatExchangeSession(object):
 def code_quote(s):
     return '`{}`'.format(s.replace('`', ''))
 
+ignored_messages = set()
+
 class RoomObserver(BaseRoomObserver):
     def __init__(self, chatexchange_session, room_id, leave_room_on_close=True, ping_format='@{}', superping_format='@@{}'):
         self._observer_active = False
@@ -42,12 +44,16 @@ class RoomObserver(BaseRoomObserver):
         logger.info('Joined room {}'.format(room_id))
 
     def _user_status_callback(self, event, client):
-        if event.type_id in (
-            ce.events.UserEntered.type_id,
-            ce.events.UserLeft.type_id,
-            ce.events.MessagePosted.type_id
-        ):
+        if event.type_id in (ce.events.UserEntered.type_id, ce.events.UserLeft.type_id):
             self._user_last_activity[event.user.id] = event.time_stamp
+        elif event.type_id == ce.events.MessagePosted.type_id:
+            src = event.message.content_source
+            try:
+                ignored_messages.remove(src)
+            except KeyError:
+                pass
+            else:
+                self._user_last_activity[event.user.id] = event.time_stamp
 
     def user_last_activity(self, user_id):
         return self._user_last_activity.get(user_id, 0)
@@ -125,6 +131,7 @@ class RoomParticipant(RoomObserver, BaseRoomParticipant):
     def _send(self, message, reply_target=None):
         message = format_message(message)
         rmessage = repr(message)
+        ignored_messages.add(rmessage)
         if reply_target:
             logger.debug('Replying with message: {}'.format(rmessage))
             reply_target.reply(message)
