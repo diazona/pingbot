@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-import ConfigParser
+import configparser
 import io
 import requests
 import sys
@@ -8,7 +8,7 @@ import time
 
 def parse_config_file(filename):
     with io.open(filename, encoding='UTF-8') as f:
-        kv = (line.split(u'=', 1) for line in f if line.strip())
+        kv = (line.split('=', 1) for line in f if line.strip())
         cfg = dict((k.strip(), v.strip()) for k, v in kv)
     return cfg
 
@@ -21,7 +21,7 @@ def initialize_logging(filename=None):
             logging.config.fileConfig(filename)
         except:
             logging.basicConfig(level=logging.WARNING)
-            logging.getLogger('pingbot').exception(u'Unable to open logging config file')
+            logging.getLogger('pingbot').exception('Unable to open logging config file')
     else:
         logging.basicConfig(level=logging.WARNING)
 
@@ -72,67 +72,67 @@ def main():
 
     initialize_logging(cfg_filename)
 
-    cfg = ConfigParser.RawConfigParser()
+    cfg = configparser.RawConfigParser()
     cfg.read(cfg_filename)
 
     listen_kwargs = {}
 
     try:
-        room_id = cfg.get(u'room', u'id')
-    except ConfigParser.NoOptionError:
+        room_id = cfg.get('room', 'id')
+    except configparser.NoOptionError:
         room_id = 'terminal'
     else:
         if room_id in ('0', 'terminal'):
             room_id = 'terminal'
     try:
-        listen_kwargs['leave_room_on_close'] = cfg.getboolean(u'user', u'leave_on_close')
-    except ConfigParser.NoOptionError:
+        listen_kwargs['leave_room_on_close'] = cfg.getboolean('user', 'leave_on_close')
+    except configparser.NoOptionError:
         listen_kwargs['leave_room_on_close'] = True
 
     try:
-        listen_kwargs['ping_format'] = cfg.get(u'room_{}'.format(room_id), u'ping_format')
-    except ConfigParser.NoOptionError:
+        listen_kwargs['ping_format'] = cfg.get('room_{}'.format(room_id), 'ping_format')
+    except configparser.NoOptionError:
         pass
     try:
-        listen_kwargs['superping_format'] = cfg.get(u'room_{}'.format(room_id), u'superping_format')
-    except ConfigParser.NoOptionError:
+        listen_kwargs['superping_format'] = cfg.get('room_{}'.format(room_id), 'superping_format')
+    except configparser.NoOptionError:
         pass
 
     try:
-        listen_kwargs['watch_tl'] = cfg.getboolean(u'room', u'watch_tl')
-    except ConfigParser.NoOptionError:
+        listen_kwargs['watch_tl'] = cfg.getboolean('room', 'watch_tl')
+    except configparser.NoOptionError:
         pass
 
     if listen_kwargs['watch_tl'] or room_id != 'terminal':
         try:
-            listen_kwargs['email'] = cfg.get(u'user', u'email')
-        except ConfigParser.NoOptionError:
-            listen_kwargs['email'] = raw_input('Email: ')
+            listen_kwargs['email'] = cfg.get('user', 'email')
+        except configparser.NoOptionError:
+            listen_kwargs['email'] = input('Email: ')
         try:
-            listen_kwargs['password'] = cfg.get(u'user', u'password')
-        except ConfigParser.NoOptionError:
+            listen_kwargs['password'] = cfg.get('user', 'password')
+        except configparser.NoOptionError:
             import getpass
             listen_kwargs['password'] = getpass.getpass('Password: ')
 
     import pingbot
 
     try:
-        pingbot.update_moderators(cfg.get(u'moderators', u'filename'))
-    except ConfigParser.NoOptionError:
+        pingbot.update_moderators(cfg.get('moderators', 'filename'))
+    except configparser.NoOptionError:
         pingbot.update_moderators()
 
     if room_id == 'terminal':
         try:
-            listen_kwargs['present_user_ids'] = set(int(s.strip()) for s in cfg.get(u'room_terminal', u'present_user_ids').split(','))
-        except ConfigParser.NoOptionError:
+            listen_kwargs['present_user_ids'] = set(int(s.strip()) for s in cfg.get('room_terminal', 'present_user_ids').split(','))
+        except configparser.NoOptionError:
             pass
         try:
-            listen_kwargs['pingable_user_ids'] = set(int(s.strip()) for s in cfg.get(u'room_terminal', u'pingable_user_ids').split(','))
-        except ConfigParser.NoOptionError:
+            listen_kwargs['pingable_user_ids'] = set(int(s.strip()) for s in cfg.get('room_terminal', 'pingable_user_ids').split(','))
+        except configparser.NoOptionError:
             pass
         try:
-            listen_kwargs['user_id'] = cfg.getint(u'room_terminal', u'user_id')
-        except ConfigParser.NoOptionError:
+            listen_kwargs['user_id'] = cfg.getint('room_terminal', 'user_id')
+        except configparser.NoOptionError:
             pass
         listen = pingbot.listen_to_terminal_room
 

@@ -20,10 +20,10 @@ HELP = '''"whois [sitename] mods" works as in TL.
 "sites" gives a list of pingable sites (not including some aliases which are also recognized).
 Pings can optionally be followed by a colon and a message.'''
 
-WHOIS = re.compile(ur'who(?:is|are) (\w+) mods$')
-ANYPING = re.compile(ur'(?:any )?(\w+) mod(?:\s*:\s*(.+))?$')
-HEREPING = re.compile(ur'(\w+) mods(?:\s*:\s*(.+))?$')
-ALLPING = re.compile(ur'all (\w+) mods(?:\s*:\s*(.+))?$')
+WHOIS = re.compile(r'who(?:is|are) (\w+) mods$')
+ANYPING = re.compile(r'(?:any )?(\w+) mod(?:\s*:\s*(.+))?$')
+HEREPING = re.compile(r'(\w+) mods(?:\s*:\s*(.+))?$')
+ALLPING = re.compile(r'all (\w+) mods(?:\s*:\s*(.+))?$')
 
 class UnknownSiteException(Exception):
     def __init__(self, site_id):
@@ -39,8 +39,8 @@ class NoOtherModeratorsException(Exception):
         self.poster_id = poster_id
 
 class Dispatcher(object):
-    NO_INFO = u'No moderator info for site {}.'
-    NO_OTHERS = u'No other moderators for site {}.'
+    NO_INFO = 'No moderator info for site {}.'
+    NO_OTHERS = 'No other moderators for site {}.'
 
     def __init__(self, room, tl=None):
         '''Constructs a message dispatcher.
@@ -89,23 +89,23 @@ class Dispatcher(object):
         return site_mod_ids, site_mod_info, excluding_poster
 
     def on_event(self, event, client):
-        logger.debug(u'Received event: {}'.format(repr(event)))
+        logger.debug('Received event: {}'.format(repr(event)))
         if not event.type_id == MessagePosted.type_id: # I would like to get rid of this dependence on MessagePosted
             return
         self.dispatch(event.content, event.message)
 
     def dispatch(self, content, message):
-        logger.debug(u'Dispatching message: {}'.format(content))
+        logger.debug('Dispatching message: {}'.format(content))
         try:
             def reply(m):
                 self._room.send(m, message)
             poster_id = message.owner.id
             try:
                 content = content.strip()
-                if content == u'help me ping':
+                if content == 'help me ping':
                     reply(HELP)
                     return
-                elif content == u'sites':
+                elif content == 'sites':
                     reply(self.sites())
                     return
                 m = WHOIS.match(content)
@@ -128,15 +128,15 @@ class Dispatcher(object):
                     reply(self.ping_all(m.group(1), poster_id, m.group(2)))
                     return
             except:
-                logger.exception(u'Error dispatching message')
-                reply(u'Something went wrong, sorry!')
+                logger.exception('Error dispatching message')
+                reply('Something went wrong, sorry!')
         except:
-            logger.exception(u'Error sending reply')
-            self._room.send(u'Something went _really_ wrong, sorry!')
+            logger.exception('Error sending reply')
+            self._room.send('Something went _really_ wrong, sorry!')
 
     def sites(self):
         '''Gives a list of sites.'''
-        return u'Known sites: ' + u', '.join(moderators.viewkeys())
+        return 'Known sites: ' + ', '.join(moderators.keys())
 
     def whois(self, site_id, poster_id):
         '''Gives a list of mods of the given site.'''
@@ -166,37 +166,37 @@ class Dispatcher(object):
             others = absent - recent - present
 
         if present:
-            present_string = u'Currently in this room: {}.'.format(
-                u', '.join(m['name'] for m in site_mod_info if m['id'] in present)
+            present_string = 'Currently in this room: {}.'.format(
+                ', '.join(m['name'] for m in site_mod_info if m['id'] in present)
             )
         else:
-            present_string = u'None are currently in this room.'
+            present_string = 'None are currently in this room.'
 
         if recent:
-            recent_string = u'Recently active: {}.'.format(
-                u', '.join(m['name'] for m in site_mod_info if m['id'] in recent)
+            recent_string = 'Recently active: {}.'.format(
+                ', '.join(m['name'] for m in site_mod_info if m['id'] in recent)
             )
         else:
-            recent_string = u'None are recently active.'
+            recent_string = 'None are recently active.'
 
-        absent_mod_list = u', '.join(
-            u'{} ({})'.format(m['name'], self._room.ping_string(m['id'], quote=True))
+        absent_mod_list = ', '.join(
+            '{} ({})'.format(m['name'], self._room.ping_string(m['id'], quote=True))
             for m in site_mod_info if m['id'] in others
         )
 
         if present or recent:
-            info_string = u'I know of {} moderators on {}.'.format(count_format, site_name)
+            info_string = 'I know of {} moderators on {}.'.format(count_format, site_name)
             if present and recent:
-                absent_mod_leadin = u'Others:'
-                return ' '.join([info_string, present_string, recent_string, absent_mod_leadin, absent_mod_list, u'.'])
+                absent_mod_leadin = 'Others:'
+                return ' '.join([info_string, present_string, recent_string, absent_mod_leadin, absent_mod_list, '.'])
             elif present:
-                absent_mod_leadin = u'Not currently in this room:'
-                return ' '.join([info_string, present_string, absent_mod_leadin, absent_mod_list, u'.'])
+                absent_mod_leadin = 'Not currently in this room:'
+                return ' '.join([info_string, present_string, absent_mod_leadin, absent_mod_list, '.'])
             elif recent:
-                absent_mod_leadin = u'Not recently active:'
-                return ' '.join([info_string, recent_string, absent_mod_leadin, absent_mod_list, u'.'])
+                absent_mod_leadin = 'Not recently active:'
+                return ' '.join([info_string, recent_string, absent_mod_leadin, absent_mod_list, '.'])
         else:
-            return u'I know of {} moderators on {}: {}. None are recently active.'.format(
+            return 'I know of {} moderators on {}: {}. None are recently active.'.format(
                 count_format,
                 site_name,
                 absent_mod_list
@@ -242,9 +242,9 @@ class Dispatcher(object):
 
         mod_ping = self._room.ping_string(min(mod_ping_set, key=activity_metric))
         if message:
-            return u'{}: {}'.format(mod_ping, message)
+            return '{}: {}'.format(mod_ping, message)
         else:
-            return u'Pinging one moderator: {}'.format(mod_ping)
+            return 'Pinging one moderator: {}'.format(mod_ping)
 
     def ping_present(self, site_id, poster_id, message=None):
         '''Sends a ping to all currently present mods from the chosen site.'''
@@ -262,13 +262,13 @@ class Dispatcher(object):
         present, pingable, absent = self._room.classify_user_ids(site_mod_ids)
 
         if present:
-            mod_pings = u' '.join(self._room.ping_strings(present))
+            mod_pings = ' '.join(self._room.ping_strings(present))
             if message:
-                return u'{}: {}'.format(mod_pings, message)
+                return '{}: {}'.format(mod_pings, message)
             else:
-                return u'Pinging {} moderator{}: {}'.format(len(present), u's' if len(present) != 1 else u'', mod_pings)
+                return 'Pinging {} moderator{}: {}'.format(len(present), 's' if len(present) != 1 else '', mod_pings)
         else:
-            return (u'No other' if excluding_poster else u'No') + u' moderators of {} are currently in this room. Use `{} mod` to ping one.'.format(site_name, site_id)
+            return ('No other' if excluding_poster else 'No') + ' moderators of {} are currently in this room. Use `{} mod` to ping one.'.format(site_name, site_id)
 
     def ping_all(self, site_id, poster_id, message=None):
         '''Sends a ping to all mods from the chosen site.'''
@@ -281,11 +281,11 @@ class Dispatcher(object):
         except NoOtherModeratorsException:
             return self.NO_OTHERS.format(site_id)
 
-        mod_pings = u' '.join(self._room.ping_strings(m['id'] for m in site_mod_info))
+        mod_pings = ' '.join(self._room.ping_strings(m['id'] for m in site_mod_info))
         if message:
-            return u'{}: {}'.format(mod_pings, message)
+            return '{}: {}'.format(mod_pings, message)
         else:
-            return u'Pinging {} moderators: {}'.format(len(site_mod_info), mod_pings)
+            return 'Pinging {} moderators: {}'.format(len(site_mod_info), mod_pings)
 
 def _listen_to_room(room, tl=None):
     try:
@@ -295,7 +295,7 @@ def _listen_to_room(room, tl=None):
             # wait for an interruption
             time.sleep(1)
     except KeyboardInterrupt:
-        logger.info(u'Terminating due to KeyboardInterrupt')
+        logger.info('Terminating due to KeyboardInterrupt')
 
 from pingbot.chat import intersection
 

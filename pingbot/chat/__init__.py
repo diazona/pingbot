@@ -13,9 +13,7 @@ def intersection(collection, pool):
     else:
         return [x for x in collection if x in pool]
 
-class RoomObserver(object):
-    __metaclass__ = ABCMeta
-
+class RoomObserver(object, metaclass=ABCMeta):
     @abstractmethod
     def watch(self, event_callback):
         pass
@@ -69,9 +67,7 @@ class RoomObserver(object):
     def observer_active(self):
         return True
 
-class RoomParticipant(object):
-    __metaclass__ = ABCMeta
-
+class RoomParticipant(object, metaclass=ABCMeta):
     @abstractmethod
     def send(self, message, reply_target=None):
         pass
