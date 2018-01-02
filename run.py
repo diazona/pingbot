@@ -18,7 +18,7 @@ def initialize_logging(filename=None):
 
     if filename:
         try:
-            logging.config.fileConfig(filename)
+            logging.config.fileConfig(filename, defaults={'handler_file' : {'encoding': 'UTF-8'}})
         except:
             logging.basicConfig(level=logging.WARNING)
             logging.getLogger('pingbot').exception('Unable to open logging config file')
