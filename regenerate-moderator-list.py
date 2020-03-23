@@ -31,14 +31,14 @@ def update_moderator_list(filename):
         site_key: [
             {
                 'name': mod.display_name,
-                'id': mod.id
+                'id': ([i['id'] for i in site_info if i['name'] == mod.display_name] or [-1])[0]
             }
             for mod in stackexchange.Site(
                 site_domain_from_key(site_key)
             ).moderators() # not moderators_elected(), because I want appointed mods too
             if not mod.is_employee and mod.id > 0 # exclude Community
         ]
-        for site_key in mod_info['moderators']
+        for site_key, site_info in mod_info['moderators'].items()
     }
 
     shutil.copy2(filename, filename + '.backup')
