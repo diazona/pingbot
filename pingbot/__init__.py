@@ -74,6 +74,8 @@ class Dispatcher(object):
                 raise NoModeratorsException(site_id)
 
         site_mod_ids = set(m['id'] for m in site_mod_info)
+        if -1 in site_mod_ids:
+            site_mod_ids.remove(-1)
 
         excluding_poster = False
         if poster_id is not None and poster_id in site_mod_ids:
@@ -151,9 +153,9 @@ class Dispatcher(object):
         site_name = get_site_name(site_id)
 
         if excluding_poster:
-            count_format = '{} other'.format(len(site_mod_info))
+            count_format = '{} other'.format(len(site_mod_ids))
         else:
-            count_format = '{}'.format(len(site_mod_info))
+            count_format = '{}'.format(len(site_mod_ids))
 
         present, pingable, absent = self._room.classify_user_ids(site_mod_ids)
 
@@ -184,22 +186,29 @@ class Dispatcher(object):
             for m in site_mod_info if m['id'] in others
         )
 
+        unknown_mod_list = ', '.join(m['name'] for m in site_mod_info if m['id'] == -1)
+        if unknown_mod_list:
+            unknown_string = "There are additional moderators whose chat profiles I don't know: " + unknown_mod_list + '.'
+        else:
+            unknown_string = ''
+
         if present or recent:
-            info_string = 'I know of {} moderators on {}.'.format(count_format, site_name)
+            info_string = 'I know about {} moderators on {}.'.format(count_format, site_name)
             if present and recent:
                 absent_mod_leadin = 'Others:'
-                return ' '.join([info_string, present_string, recent_string, absent_mod_leadin, absent_mod_list, '.'])
+                return ' '.join([info_string, present_string, recent_string, absent_mod_leadin, absent_mod_list, '.', unknown_string])
             elif present:
                 absent_mod_leadin = 'Not currently in this room:'
-                return ' '.join([info_string, present_string, absent_mod_leadin, absent_mod_list, '.'])
+                return ' '.join([info_string, present_string, absent_mod_leadin, absent_mod_list, '.', unknown_string])
             elif recent:
                 absent_mod_leadin = 'Not recently active:'
-                return ' '.join([info_string, recent_string, absent_mod_leadin, absent_mod_list, '.'])
+                return ' '.join([info_string, recent_string, absent_mod_leadin, absent_mod_list, '.', unknown_string])
         else:
-            return 'I know of {} moderators on {}: {}. None are recently active.'.format(
+            return 'I know about {} moderators on {}: {}. None are recently active. {}'.format(
                 count_format,
                 site_name,
-                absent_mod_list
+                absent_mod_list,
+                unknown_string
             )
 
     def ping_one(self, site_id, poster_id, message=None):
@@ -268,7 +277,7 @@ class Dispatcher(object):
             else:
                 return 'Pinging {} moderator{}: {}'.format(len(present), 's' if len(present) != 1 else '', mod_pings)
         else:
-            return ('No other' if excluding_poster else 'No') + ' moderators of {} are currently in this room. Use `{} mod` to ping one.'.format(site_name, site_id)
+            return "I don't know of any" + (' other' if excluding_poster else '') + ' moderators of {} currently in this room. Use `{} mod` to ping one.'.format(site_name, site_id)
 
     def ping_all(self, site_id, poster_id, message=None):
         '''Sends a ping to all mods from the chosen site.'''
@@ -281,7 +290,7 @@ class Dispatcher(object):
         except NoOtherModeratorsException:
             return self.NO_OTHERS.format(site_id)
 
-        mod_pings = ' '.join(self._room.ping_strings(m['id'] for m in site_mod_info))
+        mod_pings = ' '.join(self._room.ping_strings(m['id'] for m in site_mod_info if m['id'] != -1))
         if message:
             return '{}: {}'.format(mod_pings, message)
         else:
