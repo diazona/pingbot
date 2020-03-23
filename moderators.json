@@ -2,45 +2,37 @@
     "moderators": {
         "astronomy": [
             {
+                "id": -1,
+                "name": "HDE 226868"
+            },
+            {
                 "id": 81757,
                 "name": "called2voyage"
             },
             {
                 "id": 33740,
                 "name": "Donald.McLean"
-            },
-            {
-                "id": 63681,
-                "name": "RhysW"
             }
         ],
         "biology": [
+            {
+                "id": -1,
+                "name": "AliceD"
+            },
             {
                 "id": 103322,
                 "name": "Chris"
             },
             {
-                "id": 180,
-                "name": "Mad Scientist"
+                "id": -1,
+                "name": "Bryan Krause"
             },
             {
-                "id": 72980,
-                "name": "WYSIWYG"
+                "id": -1,
+                "name": "theforestecologist"
             }
         ],
         "chemistry": [
-            {
-                "id": 12913,
-                "name": "jonsca"
-            },
-            {
-                "id": 31768,
-                "name": "ManishEarth"
-            },
-            {
-                "id": 113953,
-                "name": "Martin - \u30de\u30fc\u30c1\u30f3"
-            },
             {
                 "id": 150884,
                 "name": "orthocresol"
@@ -48,20 +40,36 @@
             {
                 "id": 128263,
                 "name": "Loong"
+            },
+            {
+                "id": 113953,
+                "name": "Martin - \u30de\u30fc\u30c1\u30f3"
+            },
+            {
+                "id": -1,
+                "name": "andselisk"
+            },
+            {
+                "id": -1,
+                "name": "Melanie Shebel"
+            },
+            {
+                "id": 12913,
+                "name": "jonsca"
             }
         ],
         "cogsci": [
-            {
-                "id": 865,
-                "name": "Artem Kaznatcheev"
-            },
             {
                 "id": 354,
                 "name": "Jeromy Anglim"
             },
             {
-                "id": 637,
-                "name": "Josh Gitlin"
+                "id": -1,
+                "name": "AliceD"
+            },
+            {
+                "id": -1,
+                "name": "Arnon Weinberg"
             },
             {
                 "id": 13382,
@@ -74,26 +82,26 @@
                 "name": "D.W."
             },
             {
-                "id": 240,
-                "name": "Gilles"
-            },
-            {
                 "id": 6123,
                 "name": "Raphael"
+            },
+            {
+                "id": -1,
+                "name": "Discrete lizard"
             }
         ],
         "cstheory": [
-            {
-                "id": 865,
-                "name": "Artem Kaznatcheev"
-            },
             {
                 "id": 614,
                 "name": "Lev Reyzin"
             },
             {
-                "id": 663,
-                "name": "Suresh Venkat"
+                "id": 865,
+                "name": "Artem Kaznatcheev"
+            },
+            {
+                "id": -1,
+                "name": "Bj&#248;rn Kjos-Hanssen"
             }
         ],
         "earthscience": [
@@ -112,26 +120,26 @@
         ],
         "economics": [
             {
-                "id": 132641,
-                "name": "Jason Nichols"
-            },
-            {
-                "id": 66862,
-                "name": "jmbejara"
-            },
-            {
                 "id": 132898,
                 "name": "Ubiquitous"
+            },
+            {
+                "id": -1,
+                "name": "EconJohn"
+            },
+            {
+                "id": -1,
+                "name": "Kitsune Cavalry"
             }
         ],
         "hsm": [
             {
-                "id": 77717,
-                "name": "Danu"
-            },
-            {
                 "id": 124559,
                 "name": "HDE 226868"
+            },
+            {
+                "id": 77717,
+                "name": "Danu"
             },
             {
                 "id": 23525,
@@ -144,8 +152,8 @@
                 "name": "Alenanno"
             },
             {
-                "id": 16148,
-                "name": "Otavio Macedo"
+                "id": -1,
+                "name": "lemontree"
             },
             {
                 "id": 23745,
@@ -154,53 +162,69 @@
         ],
         "math": [
             {
-                "id": 18471,
-                "name": "Alexander Gruber"
+                "id": -1,
+                "name": "Asaf Karagila"
+            },
+            {
+                "id": 20249,
+                "name": "robjohn"
             },
             {
                 "id": 38554,
                 "name": "Daniel Fischer"
             },
             {
-                "id": 34511,
-                "name": "err crush faith"
+                "id": 30951,
+                "name": "Pedro Tamaroff"
             },
             {
-                "id": 16174,
-                "name": "Jyrki Lahtonen"
+                "id": -1,
+                "name": "davidlowryduda"
             },
             {
-                "id": 126,
-                "name": "Mariano Su\u00e1rez-Alvarez"
+                "id": -1,
+                "name": "quid"
+            },
+            {
+                "id": -1,
+                "name": "Aloizio Macedo"
             },
             {
                 "id": 27136,
                 "name": "Michael Greinecker"
             },
             {
-                "id": 13344,
-                "name": "mixedmath"
-            },
-            {
-                "id": 30951,
-                "name": "Pedro Tamaroff"
-            },
-            {
-                "id": 20249,
-                "name": "robjohn"
+                "id": 18471,
+                "name": "Alexander Gruber"
             }
         ],
         "matheducators": [
             {
-                "id": 83129,
-                "name": "quid"
+                "id": -1,
+                "name": "Chris Cunningham"
             },
             {
                 "id": 112450,
                 "name": "Sue VanHattum"
+            },
+            {
+                "id": 83129,
+                "name": "quid"
             }
         ],
         "mathoverflow": [
+            {
+                "id": 82485,
+                "name": "Todd Trimble"
+            },
+            {
+                "id": 81909,
+                "name": "S. Carnahan"
+            },
+            {
+                "id": -1,
+                "name": "Fran&#231;ois G. Dorais"
+            },
             {
                 "id": 56983,
                 "name": "Ben Webster"
@@ -210,53 +234,25 @@
                 "name": "David Zureick-Brown"
             },
             {
-                "id": 1592,
-                "name": "Fran\u00e7ois G. Dorais"
-            },
-            {
-                "id": 126,
-                "name": "Mariano Su\u00e1rez-Alvarez"
-            },
-            {
-                "id": 81909,
-                "name": "S. Carnahan"
-            },
-            {
                 "id": 12391,
                 "name": "Scott Morrison"
-            },
-            {
-                "id": 82485,
-                "name": "Todd Trimble"
             }
         ],
         "philosophy": [
             {
+                "id": -1,
+                "name": "Geoffrey Thomas"
+            },
+            {
+                "id": -1,
+                "name": "Philip Kl&#246;cking"
+            },
+            {
                 "id": 18228,
                 "name": "Joseph Weissman"
-            },
-            {
-                "id": 22227,
-                "name": "stoicfury"
-            },
-            {
-                "id": 115539,
-                "name": "virmaior"
             }
         ],
         "physics": [
-            {
-                "id": 1369,
-                "name": "David Z"
-            },
-            {
-                "id": 2015,
-                "name": "dmckee"
-            },
-            {
-                "id": 31768,
-                "name": "ManishEarth"
-            },
             {
                 "id": 9953,
                 "name": "Qmechanic"
@@ -266,48 +262,60 @@
                 "name": "ACuriousMind"
             },
             {
+                "id": -1,
+                "name": "dmckee --- ex-moderator kitten"
+            },
+            {
+                "id": 1369,
+                "name": "David Z"
+            },
+            {
                 "id": 116523,
                 "name": "rob"
+            },
+            {
+                "id": -1,
+                "name": "tpg2114"
+            },
+            {
+                "id": -1,
+                "name": "Chris"
             }
         ],
         "scicomp": [
             {
-                "id": 30456,
-                "name": "Geoff Oxberry"
-            },
-            {
                 "id": 30545,
                 "name": "Paul"
+            },
+            {
+                "id": -1,
+                "name": "Anton Menshov"
+            },
+            {
+                "id": -1,
+                "name": "nicoguaro"
             }
         ],
         "stats": [
             {
-                "id": 6798,
-                "name": "cardinal"
-            },
-            {
-                "id": 198,
-                "name": "chl"
-            },
-            {
-                "id": 50918,
-                "name": "Glen_b"
-            },
-            {
-                "id": 18,
-                "name": "mbq"
-            },
-            {
-                "id": 23602,
-                "name": "Peter Flom"
-            },
-            {
-                "id": 75754,
-                "name": "Scortchi"
-            },
-            {
                 "id": 336,
                 "name": "whuber"
+            },
+            {
+                "id": -1,
+                "name": "gung - Reinstate Monica"
+            },
+            {
+                "id": -1,
+                "name": "Peter Flom - Reinstate Monica"
+            },
+            {
+                "id": -1,
+                "name": "Tim"
+            },
+            {
+                "id": -1,
+                "name": "Scortchi - Reinstate Monica"
             }
         ]
     }
