@@ -112,22 +112,22 @@ class Dispatcher(object):
                     return
                 m = WHOIS.match(content)
                 if m:
-                    reply(self.whois(m.group(1), poster_id))
+                    reply(self.whois(m.group(1).lower(), poster_id))
                     return
                 m = ANYPING.match(content)
                 if m:
                     m = ANYPING.match(message.content_source)
-                    reply(self.ping_one(m.group(1), poster_id, m.group(2)))
+                    reply(self.ping_one(m.group(1).lower(), poster_id, m.group(2)))
                     return
                 m = HEREPING.match(content)
                 if m:
                     m = HEREPING.match(message.content_source)
-                    reply(self.ping_present(m.group(1), poster_id, m.group(2)))
+                    reply(self.ping_present(m.group(1).lower(), poster_id, m.group(2)))
                     return
                 m = ALLPING.match(content)
                 if m:
                     m = ALLPING.match(message.content_source)
-                    reply(self.ping_all(m.group(1), poster_id, m.group(2)))
+                    reply(self.ping_all(m.group(1).lower(), poster_id, m.group(2)))
                     return
             except:
                 logger.exception('Error dispatching message')
