@@ -11,7 +11,6 @@ import time
 import ChatExchange.chatexchange as ce
 
 from pingbot.chat.stackexchange import format_message, code_quote
-from pingbot.moderators import moderators
 from . import RoomObserver as BaseRoomObserver, RoomParticipant as BaseRoomParticipant
 
 logger = logging.getLogger('pingbot.chat.terminal')
@@ -51,13 +50,14 @@ class Room(BaseRoomObserver, BaseRoomParticipant):
     them as posted messages. It also includes dummy implementations of the methods
     that check for current or pingable users, but its sense of who is in the room
     and who is pingable is a static list, set on initialization.'''
-    def __init__(self, leave_room_on_close=True, ping_format='@{}', superping_format='@@{}', user_id=0, present_user_ids=frozenset(), pingable_user_ids=frozenset()):
+    def __init__(self, leave_room_on_close=True, ping_format='@{}', superping_format='@@{}', user_id=0, present_user_ids=frozenset(), pingable_user_ids=frozenset(), moderator_info=None):
         self.leave_room_on_close = leave_room_on_close
         self.ping_format = str(ping_format)
         self.superping_format = str(superping_format)
         self.user_id = user_id
         self._present_user_ids = set(present_user_ids)
         self._pingable_user_ids = set(pingable_user_ids)
+        self._moderator_info = moderator_info
         if self.user_id not in self._present_user_ids:
             logger.warning('Current user ID not in present user IDs (may be valid for testing)')
         if not (self._present_user_ids < self._pingable_user_ids):
@@ -122,7 +122,10 @@ class Room(BaseRoomObserver, BaseRoomParticipant):
         return self.ping_strings([user_id], quote)[0]
 
     def ping_strings(self, user_ids, quote=False):
-        master_name_mapping = {m['id']: m['name'] for site_mods in moderators.values() for m in site_mods}
+        if self._moderator_info:
+            master_name_mapping = {m['id']: m['name'] for site_mods in self._moderator_info.moderators.values() for m in site_mods}
+        else:
+            master_name_mapping = {}
         ping_format = code_quote(self.ping_format) if quote else self.ping_format
         superping_format = code_quote(self.superping_format) if quote else self.superping_format
         pingable_users = {i: master_name_mapping.get(i, 'user{}'.format(i)) for i in self.pingable_user_ids}

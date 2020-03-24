@@ -8,7 +8,7 @@ import time
 
 from ChatExchange.chatexchange.events import MessagePosted
 
-from pingbot.moderators import moderators, update as update_moderators
+from pingbot.moderators import ModeratorInfo
 from pingbot.sites import canonical_site_id, site_name as get_site_name
 
 logger = logging.getLogger('pingbot')
@@ -42,8 +42,11 @@ class Dispatcher(object):
     NO_INFO = 'No moderator info for site {}.'
     NO_OTHERS = 'No other moderators for site {}.'
 
-    def __init__(self, room, tl=None):
+    def __init__(self, mod_info, room, tl=None):
         '''Constructs a message dispatcher.
+
+        ``mod_info`` should be an instance of ModeratorInfo that contains moderator
+        information.
 
         ``room`` should be an object that can provide information about
         present and pingable user IDs as well as send messages. It should implement
@@ -52,6 +55,7 @@ class Dispatcher(object):
 
         ``tl`` should be a `RoomObserver` that can provide information about the
         Teachers' Lounge, if desired.'''
+        self._mod_info = mod_info
         self._room = room
         self._tl = tl
 
@@ -66,7 +70,7 @@ class Dispatcher(object):
         moderator's info has been removed from the returned information.'''
         site_id = canonical_site_id(site_id)
         try:
-            site_mod_info = copy.copy(moderators[site_id])
+            site_mod_info = copy.copy(self._mod_info.moderators[site_id])
         except KeyError as e:
             raise UnknownSiteException(site_id)
         else:
@@ -138,7 +142,7 @@ class Dispatcher(object):
 
     def sites(self):
         '''Gives a list of sites.'''
-        return 'Known sites: ' + ', '.join(moderators.keys())
+        return 'Known sites: ' + ', '.join(self._mod_info.moderators.keys())
 
     def whois(self, site_id, poster_id):
         '''Gives a list of mods of the given site.'''
@@ -296,9 +300,9 @@ class Dispatcher(object):
         else:
             return 'Pinging {} moderators: {}'.format(len(site_mod_info), mod_pings)
 
-def _listen_to_room(room, tl=None):
+def _listen_to_room(mod_info, room, tl=None):
     try:
-        dp = Dispatcher(room, tl)
+        dp = Dispatcher(mod_info, room, tl)
         room.watch(dp.on_event)
         while room.observer_active:
             # wait for an interruption
@@ -308,7 +312,7 @@ def _listen_to_room(room, tl=None):
 
 from pingbot.chat import intersection
 
-def listen_to_chat_room(email, password, room_id, watch_tl=False, host='stackexchange.com', **kwargs):
+def listen_to_chat_room(email, password, room_id, mod_info, watch_tl=False, host='stackexchange.com', **kwargs):
     from pingbot.chat.stackexchange import ChatExchangeSession, RoomObserver, RoomParticipant
     with ChatExchangeSession(email, password, host) as ce:
         if watch_tl:
@@ -317,12 +321,12 @@ def listen_to_chat_room(email, password, room_id, watch_tl=False, host='stackexc
             # Teachers' Lounge room ID is 4
             with RoomObserver(ce, 4, **kwargs) as tl:
                 with RoomParticipant(ce, room_id, **kwargs) as room:
-                    _listen_to_room(room, tl)
+                    _listen_to_room(mod_info, room, tl)
         else:
             with RoomParticipant(ce, room_id, **kwargs) as room:
-                _listen_to_room(room)
+                _listen_to_room(mod_info, room)
 
-def listen_to_terminal_room(watch_tl=False, **kwargs):
+def listen_to_terminal_room(mod_info, watch_tl=False, **kwargs):
     from pingbot.chat.stackexchange import ChatExchangeSession, RoomObserver
     from pingbot.chat.terminal import Room as TerminalRoom
     if watch_tl:
@@ -331,8 +335,8 @@ def listen_to_terminal_room(watch_tl=False, **kwargs):
             se_kwargs = intersection(kwargs, ('chatexchange_session', 'room_id', 'leave_room_on_close', 'ping_format', 'superping_format'))
             term_kwargs = intersection(kwargs, ('leave_room_on_close', 'ping_format', 'superping_format', 'present_user_ids', 'pingable_user_ids'))
             with RoomObserver(ce, 4, **se_kwargs) as tl:
-                with TerminalRoom(**term_kwargs) as room:
-                    _listen_to_room(room, tl)
+                with TerminalRoom(moderator_info=mod_info, **term_kwargs) as room:
+                    _listen_to_room(mod_info, room, tl)
     else:
         with TerminalRoom(**kwargs) as room:
-            _listen_to_room(room)
+            _listen_to_room(mod_info, room)

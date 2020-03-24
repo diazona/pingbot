@@ -117,9 +117,10 @@ def main():
     import pingbot
 
     try:
-        pingbot.update_moderators(cfg.get('moderators', 'filename'))
+        listen_kwargs['mod_info'] = pingbot.ModeratorInfo(cfg.get('moderators', 'filename'))
     except configparser.NoOptionError:
-        pingbot.update_moderators()
+        listen_kwargs['mod_info'] = pingbot.ModeratorInfo('moderators.json')
+    listen_kwargs['mod_info'].update()
 
     if room_id == 'terminal':
         try:
